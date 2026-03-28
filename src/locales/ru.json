@@ -1,0 +1,19 @@
+{
+  "header": {
+    "brand": "Relay",
+    "CTA": "Оформить заказ",
+    "navLabel": "Основная навигация",
+    "nav": {
+      "about": "Обо мне",
+      "services": "Услуги",
+      "cases": "Кейсы",
+      "process": "Процесс",
+      "faq": "FAQ"
+    }
+  },
+  "language": {
+    "en": "EN",
+    "ru": "RU",
+    "switcherLabel": "Язык"
+  }
+}
