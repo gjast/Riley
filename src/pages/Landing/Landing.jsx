@@ -45,7 +45,7 @@ export default function Landing() {
 			<LogoLoop
 				logos={LINE_ITEMS}
 				gap={16}
-				speed={90}
+				speed={30}
 
 				logoHeight={86}
 				renderItem={(item) => (
