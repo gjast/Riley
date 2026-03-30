@@ -1,0 +1,43 @@
+import React from 'react'
+import Title from '../../../components/Title'
+import Servic from '../../../components/Servic'
+
+
+export default function Services() {
+	return (
+		<section id="services" className='flex flex-col gap-[48px] items-center justify-center w-[calc(100%-100px)] max-w-[1440px]'>
+				<Title title="Services" description="Choose a service and provide your project details." />
+
+				<div className='grid gap-[16px] items-center justify-center md:grid-cols-4 grid-cols-1 w-full'>
+						<Servic 
+						title={'Web'} 
+						price={'≥ $1.500'} 
+						href={'#'} 
+						position={'top-[50%] translate-y-[-50%] left-0'} 
+						img={'./imgs/serv/web.png'}
+						/>
+							<Servic 
+						title={'Landing'} 
+						price={'≥ $350'} 
+						href={'#'} 
+						position={'top-0 right-0'} 
+						img={'./imgs/serv/land.png'}
+						/>
+							<Servic 
+						title={'Logotypes'} 
+						price={'≥ $300'} 
+						href={'#'} 
+						position={'top-0 right-0'} 
+						img={'./imgs/serv/logo.png'}
+						/>
+							<Servic 
+						title={'Illustrations'} 
+						price={'≥ $300'} 
+						href={'#'} 
+						position={'top-0 right-0'} 
+						img={'./imgs/serv/pen.png'}
+						/>
+				</div>
+		</section>
+	)
+}

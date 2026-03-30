@@ -2,6 +2,8 @@ import Header from "../../components/Header";
 import LineItem from "../../components/LineItem";
 import Hero from "./blocks/Hero";
 import LogoLoop from "./blocks/LogoLoop";
+import Services from "./blocks/Services";
+import Cases from "./blocks/Cases";
 
 const LINE_ITEMS = [
 	{
@@ -52,6 +54,10 @@ export default function Landing() {
 					<LineItem img={item.img} width={item.width} height={item.height} />
 				)}
 			/>
+			<div className='w-full flex flex-col mt-[96px] gap-[96px] items-center justify-center'>
+			<Services/>
+			<Cases/>
+			</div>
 		</div>
 	);
 }

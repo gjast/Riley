@@ -3,7 +3,8 @@ import StarfieldBackground from "../../../components/StarfieldBackground";
 
 export default function Hero() {
 	return (
-		<div
+		<section
+		id="about"
 			className="relative mb-[26px] flex min-h-[calc(100vh-111px)] w-[calc(100%-50px)] justify-center overflow-hidden rounded-b-[24px] border-t-0 bg-[--color-hero-background]"
 			style={{
 				boxShadow:
@@ -39,6 +40,6 @@ export default function Hero() {
 				alt=""
 			/>
 
-		</div>
+		</section>
 	)
 }
