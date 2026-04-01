@@ -8,7 +8,7 @@ export default function Services() {
 		<section id="services" className='flex flex-col gap-[48px] items-center justify-center w-[calc(100%-100px)] max-w-[1440px]'>
 				<Title title="Services" description="Choose a service and provide your project details." />
 
-				<div className='grid gap-[16px] items-center justify-center md:grid-cols-4 grid-cols-1 w-full'>
+				<div className="grid w-full grid-cols-1 justify-items-center gap-4 md:grid-cols-4 md:gap-[16px]">
 						<Servic 
 						title={'Web'} 
 						price={'≥ $1.500'} 
@@ -42,6 +42,8 @@ export default function Services() {
 						img={'./imgs/serv/pen.png'}
 						/>
 				</div>
+
+				
 		</section>
 	)
 }

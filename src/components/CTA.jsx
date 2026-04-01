@@ -1,14 +1,11 @@
 import React from 'react'
 
-export default function CTA({ text, onClick }) {
+export default function CTA({ text, onClick, className = "" }) {
 	return (
-		<button className="bg-white text-black px-[24px] h-[42px] rounded-[10px]
-		2xl:text-[18px] text-[16px] text-center font-medium tracking-[-0.02em] flex items-center justify-center
-		cursor-pointer 
-		transition-all duration-300
-		hover:scale-105 hover:shadow-[0_0_10px_2px_rgba(255,255,255,0.3)]
-		active:scale-95
-		" onClick={onClick}>
+		<button
+			className={`flex h-[42px] cursor-pointer items-center justify-center rounded-[10px] bg-white px-[24px] text-center text-[16px] font-medium tracking-[-0.02em] text-black transition-all duration-300 hover:scale-105 hover:shadow-[0_0_10px_2px_rgba(255,255,255,0.3)] active:scale-95 2xl:text-[18px] ${className}`}
+			onClick={onClick}
+		>
 			{text}
 		</button>
 

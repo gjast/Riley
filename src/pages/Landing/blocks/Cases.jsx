@@ -1,24 +1,27 @@
-import React from 'react'
-import Title from '../../../components/Title'
-import Case from '../../../components/Case'
+import Title from "../../../components/Title";
+import Case from "../../../components/Case";
+
 export default function Cases() {
 	return (
-		<div className='flex flex-col gap-[48px] items-center justify-center w-[calc(100%-100px)] max-w-[1440px]'>
+		<div
+			id="cases"
+			className="mx-auto flex w-[calc(100%-2rem)] max-w-[1440px] flex-col items-center justify-center gap-8 sm:w-[calc(100%-3rem)] sm:gap-10 md:gap-12 lg:w-[calc(100%-100px)] lg:gap-[48px]"
+		>
 			<Title title="Cases" description="Choose a service and provide your project details." />
 
-			<div className='grid gap-[24px] items-center justify-center md:grid-cols-3 grid-cols-1 w-full'>
-				<Case img={'./imgs/case/1.png'} title={'Gambler (WEB + Illustrations) '} href={'#'} />
-				<Case img={'./imgs/case/1.png'} title={'Gambler (WEB + Illustrations) '} href={'#'} />
-				<Case img={'./imgs/case/1.png'} title={'Gambler (WEB + Illustrations) '} href={'#'} />
+			<div className="grid w-full grid-cols-2 gap-3 sm:gap-4 md:gap-5 lg:grid-cols-3 lg:gap-[24px]">
+				<Case img="/imgs/case/1.png" title="Gambler (WEB + Illustrations) " href="#" />
+				<Case img="/imgs/case/1.png" title="Gambler (WEB + Illustrations) " href="#" />
+				<Case img="/imgs/case/1.png" title="Gambler (WEB + Illustrations) " href="#" />
 
-				<Case img={'./imgs/case/1.png'} title={'Gambler (WEB + Illustrations) '} href={'#'} />
-				<Case img={'./imgs/case/1.png'} title={'Gambler (WEB + Illustrations) '} href={'#'} />
-				<Case img={'./imgs/case/1.png'} title={'Gambler (WEB + Illustrations) '} href={'#'} />
+				<Case img="/imgs/case/1.png" title="Gambler (WEB + Illustrations) " href="#" />
+				<Case img="/imgs/case/1.png" title="Gambler (WEB + Illustrations) " href="#" />
+				<Case img="/imgs/case/1.png" title="Gambler (WEB + Illustrations) " href="#" />
 
-				<Case img={'./imgs/case/1.png'} title={'Gambler (WEB + Illustrations) '} href={'#'} />
-				<Case img={'./imgs/case/1.png'} title={'Gambler (WEB + Illustrations) '} href={'#'} />
-				<Case img={'./imgs/case/1.png'} title={'Gambler (WEB + Illustrations) '} href={'#'} />
+				<Case img="/imgs/case/1.png" title="Gambler (WEB + Illustrations) " href="#" />
+				<Case img="/imgs/case/1.png" title="Gambler (WEB + Illustrations) " href="#" />
+				<Case img="/imgs/case/1.png" title="Gambler (WEB + Illustrations) " href="#" />
 			</div>
 		</div>
-	)
+	);
 }

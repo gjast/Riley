@@ -5,7 +5,7 @@ import ruFlag from "../assets/flags/ru.svg";
 
 const FLAGS = { en: enFlag, ru: ruFlag };
 
-export default function LanguageSwitcher() {
+export default function LanguageSwitcher({ inline = false }) {
 	const { i18n, t } = useTranslation();
 	const [open, setOpen] = useState(false);
 	const current = i18n.resolvedLanguage?.startsWith("ru") ? "ru" : "en";
@@ -19,7 +19,7 @@ export default function LanguageSwitcher() {
 
 	return (
 		<div
-			className="w-[42px] absolute top-0 right-0"
+			className={`w-[42px] ${inline ? "relative mx-auto" : "absolute top-0 right-0"}`}
 			role="group"
 			aria-label={t("language.switcherLabel")}
 			aria-expanded={open}

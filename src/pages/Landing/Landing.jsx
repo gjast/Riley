@@ -5,6 +5,8 @@ import LogoLoop from "./blocks/LogoLoop";
 import Services from "./blocks/Services";
 import Cases from "./blocks/Cases";
 import Start from "./blocks/Start";
+import Faq from "./blocks/Faq";
+import Footer from "./blocks/Footer";
 const LINE_ITEMS = [
 	{
 		img: '/imgs/coop/1.png',
@@ -54,10 +56,12 @@ export default function Landing() {
 					<LineItem img={item.img} width={item.width} height={item.height} />
 				)}
 			/>
-			<div className='w-full flex flex-col mt-[96px] gap-[96px] items-center justify-center'>
+			<div className='w-full flex flex-col mt-[96px] mb-[64px] gap-[96px] items-center justify-center'>
 			<Services/>
 			<Cases/>
 			<Start/>
+			<Faq/>
+			<Footer/>
 			</div>
 		</div>
 	);

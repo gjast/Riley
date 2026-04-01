@@ -260,7 +260,7 @@ export const LogoLoop = memo(
             <li
               className={cx(
                 'flex-none text-(length:--logoloop-logoHeight) leading-none',
-                isVertical ? 'mb-[var(--logoloop-gap)]' : 'mr-[var(--logoloop-gap)]',
+                isVertical ? 'mb-(--logoloop-gap)' : 'mr-(--logoloop-gap)',
                 scaleOnHover && 'overflow-visible group/item'
               )}
               key={key}

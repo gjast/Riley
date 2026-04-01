@@ -4,7 +4,7 @@ const BORDER_GRAD =
 export default function Servic({ img, title, price, href, position, positionImg }) {
 	return (
 		<div
-			className="relative flex h-[442px] 2xl:h-[512px] w-full max-w-[348px] flex-col justify-between overflow-hidden rounded-[16px]"
+			className="relative flex h-[442px] w-full max-w-[348px] flex-col justify-between justify-self-center overflow-hidden rounded-[16px] 2xl:h-[512px]"
 			style={{
 				border: "1px solid transparent",
 				background: `linear-gradient(var(--color-line-background), var(--color-line-background)) padding-box, ${BORDER_GRAD} border-box`,

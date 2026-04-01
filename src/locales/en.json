@@ -3,6 +3,8 @@
     "brand": "Relay",
     "CTA": "Make an order",
     "navLabel": "Main navigation",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu",
     "nav": {
       "about": "About me",
       "services": "Services",

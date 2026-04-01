@@ -3,6 +3,8 @@
     "brand": "Relay",
     "CTA": "Оформить заказ",
     "navLabel": "Основная навигация",
+    "openMenu": "Открыть меню",
+    "closeMenu": "Закрыть меню",
     "nav": {
       "about": "Обо мне",
       "services": "Услуги",

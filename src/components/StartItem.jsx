@@ -1,29 +1,21 @@
-import React from 'react'
+import React from "react";
 
-export default function StartItem({img, title, active, position}) {
+export default function StartItem({ img, title, active, position }) {
 	return (
 		<div>
-			<div className='2xl:h-[136px] flex-1 bg-[#101012] border border-[#252526] cursor-pointer rounded-[12px] relative overflow-hidden '>
-				<img src={img} alt={title} className={`z-10 absolute ${position} h-[112px] object-cover`} />
-				<img 
-					src='./imgs/gradient.svg' 
-					alt='gradient' 
-					className={`
-						w-full h-full z-0 object-cover 
-						transition-opacity duration-300
-						${active ? 'opacity-100' : 'opacity-0'}
-					`}
+			<div className="relative flex-1 cursor-pointer overflow-hidden rounded-[12px] border border-[#252526] bg-[#101012] 2xl:h-[136px]">
+				<img src={img} alt={title} className={`absolute z-10 h-[112px] object-cover ${position}`} />
+				<img
+					src="./imgs/gradient.svg"
+					alt="gradient"
+					className={`z-0 h-full w-full object-cover transition-opacity duration-300 ${active ? "opacity-100" : "opacity-0"}`}
 				/>
 			</div>
-			<p 
-				className={`
-					font-medium text-[18px] leading-[150%] tracking-[-0.02em] mt-[12px]
-					transition-colors duration-300
-					${active ? 'text-white' : 'text-[#6A6A6D]'}
-				`}
+			<p
+				className={`mt-[12px] text-[18px] font-medium leading-[150%] tracking-[-0.02em] transition-colors duration-300 ${active ? "text-white" : "text-[#6A6A6D]"}`}
 			>
 				{title}
 			</p>
 		</div>
-	)
+	);
 }
