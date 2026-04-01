@@ -13,28 +13,32 @@ export default function Services() {
 						title={'Web'} 
 						price={'≥ $1.500'} 
 						href={'#'} 
-						position={'top-[50%] translate-y-[-50%] left-0'} 
+						position={'justify-start items-end'} 
 						img={'./imgs/serv/web.png'}
+						positionImg={'h-auto pb-[15px]'}
 						/>
 							<Servic 
 						title={'Landing'} 
 						price={'≥ $350'} 
 						href={'#'} 
-						position={'top-0 right-0'} 
+						position={'justify-end items-end'}
+						positionImg={'h-full'} 
 						img={'./imgs/serv/land.png'}
 						/>
 							<Servic 
 						title={'Logotypes'} 
 						price={'≥ $300'} 
 						href={'#'} 
-						position={'top-0 right-0'} 
+						position={'justify-end items-start'} 
+						positionImg={'h-full'}
 						img={'./imgs/serv/logo.png'}
 						/>
 							<Servic 
 						title={'Illustrations'} 
 						price={'≥ $300'} 
 						href={'#'} 
-						position={'top-0 right-0'} 
+						position={'justify-end items-start'} 
+						positionImg={'h-full'}
 						img={'./imgs/serv/pen.png'}
 						/>
 				</div>

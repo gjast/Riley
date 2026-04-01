@@ -4,7 +4,7 @@ import Hero from "./blocks/Hero";
 import LogoLoop from "./blocks/LogoLoop";
 import Services from "./blocks/Services";
 import Cases from "./blocks/Cases";
-
+import Start from "./blocks/Start";
 const LINE_ITEMS = [
 	{
 		img: '/imgs/coop/1.png',
@@ -57,6 +57,7 @@ export default function Landing() {
 			<div className='w-full flex flex-col mt-[96px] gap-[96px] items-center justify-center'>
 			<Services/>
 			<Cases/>
+			<Start/>
 			</div>
 		</div>
 	);

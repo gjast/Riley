@@ -1,7 +1,7 @@
 const BORDER_GRAD =
 	"linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0) 48.56%, rgba(255, 255, 255, 0.04) 100%)";
 
-export default function Servic({ img, title, price, href, position }) {
+export default function Servic({ img, title, price, href, position, positionImg }) {
 	return (
 		<div
 			className="relative flex h-[442px] 2xl:h-[512px] w-full max-w-[348px] flex-col justify-between overflow-hidden rounded-[16px]"
@@ -10,9 +10,11 @@ export default function Servic({ img, title, price, href, position }) {
 				background: `linear-gradient(var(--color-line-background), var(--color-line-background)) padding-box, ${BORDER_GRAD} border-box`,
 			}}
 		>
-			<p className="px-[28px] pt-[28px] text-[18px] font-medium">{title}</p>
+			<p className="mx-[28px] mt-[28px] text-[18px] font-medium">{title}</p>
 
-			<img src={img} className={`absolute w-[95%] ${position}`} alt="" />
+			<div className={`absolute top-0 left-0 w-full 2xl:h-[415px] h-[360px] flex justify-end items-end ${position}`}>
+			<img src={img} className={`absolute max-w-[95%] ${positionImg}`} alt="" />
+			</div>
 
 			<div className="flex items-center justify-between px-[28px] cursor-pointer pb-[28px]
 				group
