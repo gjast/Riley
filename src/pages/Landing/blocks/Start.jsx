@@ -55,9 +55,9 @@ function formatDeadlineValue(raw) {
 }
 
 const INITIAL_STATE = {
-	budget: "",
+	budget: "$750",
 	budgetHint: "$750",
-	deadline: "",
+	deadline: "7d",
 	deadlineHint: "7d",
 	name: "",
 	desc: "",
@@ -85,11 +85,19 @@ export default function Start() {
 	}, []);
 
 	const pickBudgetPreset = useCallback((hint) => {
-		setForm((prev) => ({ ...prev, budgetHint: hint, budget: "" }));
+		setForm((prev) => ({
+			...prev,
+			budgetHint: hint,
+			budget: hint,
+		}));
 	}, []);
 
 	const pickDeadlinePreset = useCallback((hint) => {
-		setForm((prev) => ({ ...prev, deadlineHint: hint, deadline: "" }));
+		setForm((prev) => ({
+			...prev,
+			deadlineHint: hint,
+			deadline: hint,
+		}));
 	}, []);
 
 	const handleBudgetChange = useCallback((raw) => {

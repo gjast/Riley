@@ -13,7 +13,6 @@ export default function PresetTextField({
   autoComplete = "off",
 }) {
   const [open, setOpen] = useState(false);
-  const [focused, setFocused] = useState(false);
   const rootRef = useRef(null);
 
   useEffect(() => {
@@ -54,18 +53,10 @@ export default function PresetTextField({
             placeholder={hintPlaceholder}
             onClick={(e) => e.stopPropagation()}
             onMouseDown={(e) => e.stopPropagation()}
-            onFocus={() => setFocused(true)}
-            onBlur={() => setFocused(false)}
             className={`
               min-w-0 flex-1 cursor-text bg-transparent text-[16px] outline-none
               placeholder:text-[#6A6A6D]
-              ${
-                !hasValue
-                  ? "text-[#6A6A6D]"
-                  : focused
-                    ? "text-white"
-                    : "text-[#6A6A6D]"
-              }
+              ${hasValue ? "text-white" : "text-[#6A6A6D]"}
             `}
           />
 
