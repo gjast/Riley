@@ -119,7 +119,7 @@ export default function StarfieldBackground({
 			scale: clamp(rand(lo, hi), 0.06, 2.5),
 			opacityPeak: rand(0.14, 0.48),
 			duration: rand(12, 48),
-			delay: -Math.random() * 55,
+			delay: -rand(0, 55),
 		}));
 	}, [
 		count,

@@ -26,8 +26,11 @@ export default function Header() {
 	}, [menuOpen, closeMenu]);
 
 	return (
-		<header className="fixed left-1/2 top-3 z-20 w-[calc(100%-2rem)] max-w-[1440px] -translate-x-1/2 sm:top-4 sm:w-[calc(100%-3rem)] lg:top-6 lg:w-[calc(100%-100px)]">
-			<div className="flex items-center justify-between gap-3 rounded-2xl bg-[--color-hero-background]/50 px-3 py-2.5 backdrop-blur-[32px] sm:px-4 sm:py-3 lg:rounded-[24px] lg:px-4">
+		<header
+			data-site-header
+			className="fixed left-1/2 top-3 z-20 w-[calc(100%-2rem)] max-w-[1440px] -translate-x-1/2 sm:top-4 sm:w-[calc(100%-3rem)] lg:top-6 lg:w-[calc(100%-100px)]"
+		>
+			<div className="flex items-center justify-between gap-3 rounded-2xl bg-[--color-hero-background]/50 px-3 py-2.5 backdrop-blur-[62px] sm:px-4 sm:py-3 lg:rounded-[24px] lg:px-4">
 				<div className="flex min-w-0 items-center gap-2">
 					<img src={logo} alt="" width={32} height={32} className="h-7 w-7 shrink-0 sm:h-8 sm:w-8" />
 					<h1 className="truncate text-[16px] font-semibold sm:text-[17px] lg:text-[18px]">
@@ -115,12 +118,7 @@ export default function Header() {
 						</ul>
 
 						<div className="mt-2 flex flex-col gap-3 border-t border-white/10 pt-4">
-							<p className="text-center text-xs font-medium uppercase tracking-wide text-[#76767A]">
-								{t("language.switcherLabel")}
-							</p>
-							<div className="flex justify-center py-1">
-								<LanguageSwitcher inline />
-							</div>
+							
 							<CTA
 								text={t("header.CTA")}
 								onClick={() => {
@@ -128,6 +126,14 @@ export default function Header() {
 								}}
 								className="w-full text-[15px]"
 							/>
+							<div className="flex justify-between items-center gap-1">
+							<p className="text-center text-xs font-medium uppercase tracking-wide text-[#76767A]">
+								{t("language.switcherLabel")}
+							</p>
+							<div className="flex justify-center py-1">
+								<LanguageSwitcher inline mode="toggle" />
+							</div>
+							</div>
 						</div>
 					</div>
 				</>

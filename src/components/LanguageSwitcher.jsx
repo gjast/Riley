@@ -5,7 +5,7 @@ import ruFlag from "../assets/flags/ru.svg";
 
 const FLAGS = { en: enFlag, ru: ruFlag };
 
-export default function LanguageSwitcher({ inline = false }) {
+export default function LanguageSwitcher({ inline = false, mode = "dropdown" }) {
 	const { i18n, t } = useTranslation();
 	const [open, setOpen] = useState(false);
 	const current = i18n.resolvedLanguage?.startsWith("ru") ? "ru" : "en";
@@ -13,10 +13,26 @@ export default function LanguageSwitcher({ inline = false }) {
 
 	const handlePickOther = (e) => {
 		void i18n.changeLanguage(other);
-		setOpen(false);
 		e.currentTarget.blur();
 	};
 
+	// Mobile/menu mode: single button, click toggles language (no раскрытие)
+	if (mode === "toggle") {
+		return (
+			<button
+				type="button"
+				onClick={handlePickOther}
+				className={`flex h-[42px] w-[42px] items-center justify-center rounded-[10px] border border-[#1E1E20] bg-[#101012] ${
+					inline ? "" : ""
+				}`}
+				aria-label={t(`language.${other}`)}
+			>
+				<img src={FLAGS[current]} alt="" width={24} height={24} />
+			</button>
+		);
+	}
+
+	// Default: раскрывающийся переключатель (hover)
 	return (
 		<div
 			className={`w-[42px] ${inline ? "relative mx-auto" : "absolute top-0 right-0"}`}

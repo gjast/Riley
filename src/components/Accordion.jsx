@@ -29,7 +29,12 @@ function AccordionItem({ item, isOpen, onToggle }) {
       <button
         type="button"
         onClick={() => onToggle(item.id)}
-        className="flex min-h-12 w-full cursor-pointer items-center justify-between gap-3 px-4 py-3.5 text-left sm:min-h-0 sm:px-5 sm:py-4 md:px-6 md:py-[18px]"
+        className={`flex min-h-12 w-full cursor-pointer items-center justify-between gap-3 border-b-2 
+          
+           border-b-transparent
+            px-4 py-3.5 text-left transition-colors duration-300 sm:min-h-0 sm:px-5 sm:py-4 md:px-6 md:py-[18px] ${
+          isOpen ? "bg-[#141517] border-b-[#1E1E20]!" : "bg-transparent"
+        }`}
       >
         <span className="text-[16px] font-medium leading-[150%] tracking-[-0.02em] text-white sm:text-[17px] md:text-[18px]">
           {item.question}
@@ -44,7 +49,7 @@ function AccordionItem({ item, isOpen, onToggle }) {
         style={{ display: "grid", gridTemplateRows: isOpen ? "1fr" : "0fr" }}
       >
         <div className="overflow-hidden">
-          <p className="px-4 pb-3.5 text-[15px] leading-[150%] tracking-[-0.02em] text-[#A1A1AA] sm:px-5 sm:pb-4 sm:text-base md:px-6 md:pb-[18px] md:text-[18px]">
+          <p className="px-4 py-3.5 text-[15px] leading-[150%] tracking-[-0.02em] text-[#A1A1AA] sm:px-5 sm:py-4 sm:text-base md:px-6 md:py-[18px] md:text-[18px]">
             {item.answer}
           </p>
         </div>

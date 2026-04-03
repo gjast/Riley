@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
 import Title from "../../../components/Title";
 import StartItem from "../../../components/StartItem";
 import Dropdown from "../../../components/Dropdown";
@@ -34,7 +34,6 @@ const INITIAL_STATE = {
 
 export default function Start() {
 	const [form, setForm] = useState(INITIAL_STATE);
-	const dropdownRef = useRef(null);
 
 	const setField = useCallback(
 		(key) => (value) => {
@@ -45,15 +44,6 @@ export default function Start() {
 
 	const handleClear = useCallback(() => {
 		setForm(INITIAL_STATE);
-	}, []);
-
-	useEffect(() => {
-		const handleClick = (e) => {
-			if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
-			}
-		};
-		document.addEventListener("mousedown", handleClick);
-		return () => document.removeEventListener("mousedown", handleClick);
 	}, []);
 
 	return (

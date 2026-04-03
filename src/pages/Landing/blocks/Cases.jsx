@@ -1,5 +1,6 @@
 import Title from "../../../components/Title";
 import Case from "../../../components/Case";
+import { CASES } from "../../../data/cases";
 
 export default function Cases() {
 	return (
@@ -10,17 +11,14 @@ export default function Cases() {
 			<Title title="Cases" description="Choose a service and provide your project details." />
 
 			<div className="grid w-full grid-cols-2 gap-3 sm:gap-4 md:gap-5 lg:grid-cols-3 lg:gap-[24px]">
-				<Case img="/imgs/case/1.png" title="Gambler (WEB + Illustrations) " href="#" />
-				<Case img="/imgs/case/1.png" title="Gambler (WEB + Illustrations) " href="#" />
-				<Case img="/imgs/case/1.png" title="Gambler (WEB + Illustrations) " href="#" />
-
-				<Case img="/imgs/case/1.png" title="Gambler (WEB + Illustrations) " href="#" />
-				<Case img="/imgs/case/1.png" title="Gambler (WEB + Illustrations) " href="#" />
-				<Case img="/imgs/case/1.png" title="Gambler (WEB + Illustrations) " href="#" />
-
-				<Case img="/imgs/case/1.png" title="Gambler (WEB + Illustrations) " href="#" />
-				<Case img="/imgs/case/1.png" title="Gambler (WEB + Illustrations) " href="#" />
-				<Case img="/imgs/case/1.png" title="Gambler (WEB + Illustrations) " href="#" />
+				{CASES.map((item) => (
+					<Case
+						key={item.id}
+						img={item.img}
+						title={item.title}
+						to={`/portfolio/${item.id}`}
+					/>
+				))}
 			</div>
 		</div>
 	);

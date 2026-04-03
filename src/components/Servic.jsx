@@ -1,7 +1,7 @@
 const BORDER_GRAD =
 	"linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0) 48.56%, rgba(255, 255, 255, 0.04) 100%)";
 
-export default function Servic({ img, title, price, href, position, positionImg }) {
+export default function Servic({ img, title, price, position, positionImg }) {
 	return (
 		<div
 			className="relative flex h-[442px] w-full max-w-[348px] flex-col justify-between justify-self-center overflow-hidden rounded-[16px] 2xl:h-[512px]"

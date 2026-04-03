@@ -1,7 +1,9 @@
-import React from 'react'
+import React from "react";
 
+import { motion, useReducedMotion } from "motion/react";
 
-import { useCallback, useEffect, useMemo, useRef, useState, memo } from 'react';
+const MotionRoot = motion.div;
+import { useCallback, useEffect, useMemo, useRef, useState, memo } from "react";
 
 const ANIMATION_CONFIG = {
   SMOOTH_TAU: 0.25,
@@ -253,6 +255,8 @@ export const LogoLoop = memo(
       if (effectiveHoverSpeed !== undefined) setIsHovered(false);
     }, [effectiveHoverSpeed]);
 
+    const reducedMotion = useReducedMotion();
+
     const renderLogoItem = useCallback(
       (item, key) => {
         if (renderItem) {
@@ -376,7 +380,7 @@ export const LogoLoop = memo(
     );
 
     return (
-      <div
+      <MotionRoot
         ref={containerRef}
         className={rootClasses}
         style={containerStyle}
@@ -384,6 +388,10 @@ export const LogoLoop = memo(
         aria-label={ariaLabel}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
+        initial={reducedMotion ? false : { opacity: 0, y: 32 }}
+        whileInView={reducedMotion ? undefined : { opacity: 1, y: 0 }}
+        viewport={{ once: true, amount: 0.1, margin: "0px" }}
+        transition={{ duration: reducedMotion ? 0 : 0.58, ease: [0.16, 1, 0.3, 1] }}
       >
         {fadeOut && (
           <>
@@ -441,7 +449,7 @@ export const LogoLoop = memo(
         >
           {logoLists}
         </div>
-      </div>
+      </MotionRoot>
     );
   }
 );

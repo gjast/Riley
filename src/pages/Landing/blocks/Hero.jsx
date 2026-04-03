@@ -1,11 +1,38 @@
+import { motion, useReducedMotion } from "motion/react";
 import CTA from "../../../components/CTA";
 import StarfieldBackground from "../../../components/StarfieldBackground";
 
+const M = motion;
+const ease = [0.16, 1, 0.3, 1];
+
 export default function Hero() {
+  const reducedMotion = useReducedMotion();
+
+  const textContainer = {
+    hidden: {},
+    visible: {
+      transition: {
+        staggerChildren: reducedMotion ? 0 : 0.09,
+        delayChildren: reducedMotion ? 0 : 0.06,
+      },
+    },
+  };
+
+  const textItem = {
+    hidden: reducedMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: 28 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: { duration: reducedMotion ? 0 : 0.58, ease },
+    },
+  };
+
   return (
     <section
       id="about"
-      className="relative mb-[26px] flex min-h-[calc(100vh-111px)] w-full sm:w-[calc(100%-50px)] justify-center overflow-hidden rounded-b-[24px] border-t-0 bg-[--color-hero-background]"
+      className="relative mb-[26px] flex
+      min-h-[calc(100vh-411px)]
+      sm:min-h-[calc(100vh-111px)] w-full sm:w-[calc(100%-50px)] justify-center overflow-hidden rounded-b-[24px] border-t-0 bg-[--color-hero-background]"
       style={{
         boxShadow: "inset 0 0 0 1px #1E1E20, inset 0 -1px 0 0 #1E1E20",
       }}
@@ -23,24 +50,42 @@ export default function Hero() {
         speedCurve={2} // 0 — линейно; 1 — сначала быстро, в конце медленно; 2 — сначала медленно, в конце быстро; 3 — медленно → быстро в середине → медленно
       />
 
-      <div className="relative z-10 mt-[15vh] flex h-max max-w-[500px] flex-col items-center gap-[12px]">
-        <h1 className="text-center text-[26px] font-semibold leading-[1.2] tracking-[-0.02em] sm:text-[32px] md:text-[38px] lg:text-[42px] 2xl:text-[56px]">
+      <M.div
+        className="relative z-10 mt-[15vh] sm:mt-[20vh] flex h-max max-w-[500px] flex-col items-center gap-[12px]"
+        variants={textContainer}
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, amount: 0.1, margin: "0px" }}
+      >
+        <M.h1
+          variants={textItem}
+          className="text-center text-[26px] font-semibold leading-[1.2] tracking-[-0.02em] sm:text-[32px] md:text-[38px] lg:text-[42px] 2xl:text-[56px]"
+        >
           A-Z development of
           <br />
           full-fledged projects
-        </h1>
-        <h2 className="mb-[12px] text-center text-[14px] font-medium leading-normal tracking-[-0.02em] opacity-40 sm:text-[15px] md:text-[16px] 2xl:text-[18px]">
+        </M.h1>
+        <M.h2
+          variants={textItem}
+          className="mb-[12px] text-center text-[14px] font-medium leading-normal tracking-[-0.02em] text-white/40 sm:text-[15px] md:text-[16px] 2xl:text-[18px]"
+        >
           A responsible approach to business, reliability in work, <br />
           and your confidence in the final result.
-        </h2>
+        </M.h2>
 
-        <CTA text="Make an order" onClick={() => {}} />
-      </div>
+        <M.div variants={textItem}>
+          <CTA text="Make an order" onClick={() => {}} />
+        </M.div>
+      </M.div>
 
-      <img
+      <M.img
         className="absolute bottom-0 right-1/2 z-1 translate-x-1/2 object-cover"
         src="/imgs/Hero.png"
         alt=""
+        initial={reducedMotion ? false : { opacity: 0, y: 36 }}
+        whileInView={reducedMotion ? undefined : { opacity: 1, y: 0 }}
+        viewport={{ once: true, amount: 0.1, margin: "0px" }}
+        transition={{ duration: reducedMotion ? 0 : 0.65, ease, delay: 0.12 }}
       />
     </section>
   );

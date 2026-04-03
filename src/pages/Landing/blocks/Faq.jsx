@@ -2,9 +2,36 @@ import Accordion from "../../../components/Accordion";
 import Title from "../../../components/Title";
 
 const FAQ_ITEMS = [
-  { id: 1, question: "How long does a project take?", answer: "7–30 days depending on scope." },
-  { id: 2, question: "What is included in the price?", answer: "Design, dev, revisions, deployment." },
-  { id: 3, question: "How do I start?", answer: "Fill out the Start form with your details." },
+	{
+		id: 1,
+		question: "What kind of projects do you take on?",
+		answer:
+			"I work on landing pages, SaaS interfaces, dashboards, and redesigns. The focus is on structured, product-oriented design.",
+	},
+	{
+		id: 2,
+		question: "Do you handle both UX and UI?",
+		answer:
+			"Yes, I work with flows, layout logic, and interface design. The focus is on usability and clear interaction, not just visuals.",
+	},
+	{
+		id: 3,
+		question: "How is the project structured?",
+		answer:
+			"Each project follows a defined workflow: brief, structure, interface design, and refinement. The process adapts to the scope and complexity.",
+	},
+	{
+		id: 4,
+		question: "Can you redesign an existing product?",
+		answer:
+			"Yes, from targeted UX improvements to full redesigns. I work with both existing products and new concepts.",
+	},
+	{
+		id: 5,
+		question: "Do you prepare files for development?",
+		answer:
+			"Yes, designs are structured and ready for implementation. This includes components, auto layout, and clear hierarchy.",
+	},
 ];
 
 export default function FAQ() {
