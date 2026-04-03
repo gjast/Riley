@@ -1,4 +1,5 @@
 import { motion, useReducedMotion } from "motion/react";
+import { useTranslation } from "react-i18next";
 import CTA from "../../../components/CTA";
 import StarfieldBackground from "../../../components/StarfieldBackground";
 
@@ -6,6 +7,7 @@ const M = motion;
 const ease = [0.16, 1, 0.3, 1];
 
 export default function Hero() {
+  const { t } = useTranslation();
   const reducedMotion = useReducedMotion();
 
   const textContainer = {
@@ -51,7 +53,7 @@ export default function Hero() {
       />
 
       <M.div
-        className="relative z-10 mt-[15vh] sm:mt-[20vh] flex h-max max-w-[500px] flex-col items-center gap-[12px]"
+        className="relative z-10 mt-[15vh] sm:mt-[20vh] flex h-max max-w-[650px] flex-col items-center gap-[12px]"
         variants={textContainer}
         initial="hidden"
         whileInView="visible"
@@ -61,20 +63,20 @@ export default function Hero() {
           variants={textItem}
           className="text-center text-[26px] font-semibold leading-[1.2] tracking-[-0.02em] sm:text-[32px] md:text-[38px] lg:text-[42px] 2xl:text-[56px]"
         >
-          A-Z development of
+          {t("hero.titleLine1")}
           <br />
-          full-fledged projects
+          {t("hero.titleLine2")}
         </M.h1>
         <M.h2
           variants={textItem}
           className="mb-[12px] text-center text-[14px] font-medium leading-normal tracking-[-0.02em] text-white/40 sm:text-[15px] md:text-[16px] 2xl:text-[18px]"
         >
-          A responsible approach to business, reliability in work, <br />
-          and your confidence in the final result.
+          {t("hero.subtitleLine1")} <br />
+          {t("hero.subtitleLine2")}
         </M.h2>
 
         <M.div variants={textItem}>
-          <CTA text="Make an order" onClick={() => {}} />
+          <CTA text={t("header.CTA")} onClick={() => {}} />
         </M.div>
       </M.div>
 

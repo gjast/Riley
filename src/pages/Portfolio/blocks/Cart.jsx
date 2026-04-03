@@ -1,6 +1,8 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 
 export default function Cart({ img, title, description, href }) {
+  const { t } = useTranslation();
   return (
     <div className="flex-1 flex flex-col gap-[24px]">
       <div
@@ -13,24 +15,26 @@ export default function Cart({ img, title, description, href }) {
         <img className="block w-full" src={img} alt={title} />
       </div>
 
-      <div className="flex flex-col px-[64px] pb-[24px] border-b border-white/16">
-        <h3 className="text-[24px] leading-[150%] tracking-[-0.02em] font-semibold">
+      <div className="flex flex-col sm:px-[64px] px-[24px] pb-[24px]">
+
+        <h3 className="text-[24px] leading-[150%] tracking-[-0.02em] font-semibold mt-0 sm:mt-[24px]">
           {title}
         </h3>
-        <p className="text-[16px] leading-[150%] tracking-[-0.02em] mt-[14px] mb-[24px] text-[#8B8B8B]">
+        <p className="text-[16px] leading-[150%] tracking-[-0.02em] mt-[14px] mb-[24px] text-[#8B8B8B] text-balance">
           {description}
         </p>
         <a
           href={href}
-          className="text-[16px] leading-[150%] font-medium tracking-[-0.02em] text-white flex items-center gap-[4px] cursor-pointer"
+          className="text-[16px] leading-[150%] font-medium tracking-[-0.02em] text-white flex items-center gap-[4px] cursor-pointer group"
         >
-          Смотреть{" "}
+          {t("portfolio.viewLink")}{" "}
           <svg
             width="18"
             height="18"
             viewBox="0 0 18 18"
             fill="none"
             xmlns="http://www.w3.org/2000/svg"
+            className="transition-transform duration-200 ease-in-out group-hover:translate-x-[5px]"
           >
             <path
               d="M6.68359 14.9401L11.5736 10.0501C12.1511 9.47256 12.1511 8.52756 11.5736 7.95006L6.68359 3.06006"
@@ -42,7 +46,7 @@ export default function Cart({ img, title, description, href }) {
             />
           </svg>
         </a>
+        </div>
       </div>
-    </div>
   );
 }

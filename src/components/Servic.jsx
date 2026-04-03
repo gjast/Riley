@@ -3,8 +3,8 @@ const BORDER_GRAD =
 
 export default function Servic({ img, title, price, position, positionImg }) {
 	return (
-		<div
-			className="relative flex h-[442px] w-full max-w-[348px] flex-col justify-between justify-self-center overflow-hidden rounded-[16px] 2xl:h-[512px]"
+		<a href={`#`}
+			className="relative flex h-[442px] w-full min-w-0 flex-col justify-between overflow-hidden rounded-[16px] 2xl:h-[512px]"
 			style={{
 				border: "1px solid transparent",
 				background: `linear-gradient(var(--color-line-background), var(--color-line-background)) padding-box, ${BORDER_GRAD} border-box`,
@@ -12,11 +12,19 @@ export default function Servic({ img, title, price, position, positionImg }) {
 		>
 			<p className="mx-[28px] mt-[28px] text-[18px] font-medium">{title}</p>
 
-			<div className={`absolute top-0 left-0 w-full 2xl:h-[415px] h-[360px] flex justify-end items-end ${position}`}>
-			<img src={img} className={`absolute max-w-[95%] ${positionImg}`} alt="" />
+			<div
+				className={`absolute top-0 left-0 w-full 2xl:h-[415px] h-[360px] select-none flex justify-end items-end ${position}`}
+			>
+				<img
+					src={img}
+					alt=""
+					draggable={false}
+					onDragStart={(e) => e.preventDefault()}
+					className={`absolute max-w-[85%] sm:max-w-[95%] select-none ${positionImg}`}
+				/>
 			</div>
 
-			<div className="flex items-center justify-between px-[28px] cursor-pointer pb-[28px]
+			<div className="flex items-center justify-between px-[28px]  pb-[28px]
 				group
 			">
 				<p className="text-[18px] font-medium">{price}</p>
@@ -40,6 +48,6 @@ export default function Servic({ img, title, price, position, positionImg }) {
 					/>
 				</svg>
 			</div>
-		</div>
+		</a>
 	);
 }

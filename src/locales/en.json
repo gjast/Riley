@@ -17,5 +17,125 @@
     "en": "EN",
     "ru": "RU",
     "switcherLabel": "Language"
+  },
+  "hero": {
+    "titleLine1": "A-Z development of",
+    "titleLine2": "full-fledged projects",
+    "subtitleLine1": "A responsible approach to business, reliability in work,",
+    "subtitleLine2": "and your confidence in the final result."
+  },
+  "services": {
+    "title": "Services",
+    "description": "Choose a service and provide your project details.",
+    "items": {
+      "web": { "title": "Web", "price": "≥ $1.500" },
+      "landing": { "title": "Landing", "price": "≥ $750" },
+      "logotypes": { "title": "Logotypes", "price": "≥ $300" },
+      "illustrations": { "title": "Illustrations", "price": "≥ $300" }
+    }
+  },
+  "cases": {
+    "title": "Cases",
+    "description": "Choose a service and provide your project details."
+  },
+  "faq": {
+    "title": "FAQ",
+    "items": [
+      {
+        "question": "What kind of projects do you take on?",
+        "answer": "I work on landing pages, SaaS interfaces, dashboards, and redesigns. The focus is on structured, product-oriented design."
+      },
+      {
+        "question": "Do you handle both UX and UI?",
+        "answer": "Yes, I work with flows, layout logic, and interface design. The focus is on usability and clear interaction, not just visuals."
+      },
+      {
+        "question": "How is the project structured?",
+        "answer": "Each project follows a defined workflow: brief, structure, interface design, and refinement. The process adapts to the scope and complexity."
+      },
+      {
+        "question": "Can you redesign an existing product?",
+        "answer": "Yes, from targeted UX improvements to full redesigns. I work with both existing products and new concepts."
+      },
+      {
+        "question": "Do you prepare files for development?",
+        "answer": "Yes, designs are structured and ready for implementation. This includes components, auto layout, and clear hierarchy."
+      }
+    ]
+  },
+  "start": {
+    "title": "Start a Project",
+    "description": "Choose a service and provide your project details.",
+    "serviceLabels": {
+      "web": "Web",
+      "logotype": "Logotype",
+      "landing": "Landing"
+    },
+    "budgetLabel": "Budget:",
+    "deadlineLabel": "Deadline",
+    "contactLabel": "Contact address",
+    "commentLabel": "Comment",
+    "placeholderComment": "Describe your project...",
+    "clear": "Clear"
+  },
+  "footer": {
+    "heading": "Ready to transform your product?",
+    "body": "From wireframes to high-fidelity UI. Clean, scalable, and developer-ready designs.",
+    "getStarted": "Get started",
+    "viewPortfolio": "View portfolio"
+  },
+  "portfolio": {
+    "back": "Back",
+    "viewLink": "View"
+  },
+  "admin": {
+    "headerTitle": "Admin — cases",
+    "toSite": "Back to site",
+    "logout": "Log out",
+    "loginTitle": "Sign in",
+    "loginSubtitle": "Enter the admin password configured on the server (ADMIN_PASSWORD in .env).",
+    "loginPasswordLabel": "Password",
+    "loginSubmit": "Continue",
+    "loginLoading": "Signing in…",
+    "loginError": "Wrong password.",
+    "loginNetworkError": "Could not reach the server. Start it with «npm run server» or «npm run dev:full».",
+    "save": "Save to site",
+    "reset": "Reset to defaults",
+    "exportJson": "Export JSON",
+    "importJson": "Import JSON",
+    "pageTitle": "Case editor",
+    "pageIntroServer": "Edit cases for the landing grid and portfolio. Saving writes to the server file server/data/cases.json (run the API with npm run server).",
+    "selectCase": "Select case",
+    "footerNoteServer": "Production: put the Node server behind HTTPS and a reverse proxy; keep ADMIN_PASSWORD secret. The site reads cases via GET /api/cases.",
+    "landingHintPrefix": "Preview and title on the home page; click opens",
+    "newCardDefaultTitle": "New block",
+    "status": {
+      "savedServer": "Saved on the server. Refresh the site to load the latest cases.",
+      "reset": "Reset to built-in defaults on the server.",
+      "exported": "JSON downloaded.",
+      "importInvalid": "Invalid file: expected an array of cases.",
+      "importDraft": "Imported into draft. Click «Save to site» to apply.",
+      "importReadError": "Could not read JSON.",
+      "sessionExpired": "Session expired or access denied. Sign in again.",
+      "saveFailed": "Could not save. Check the server and your connection."
+    },
+    "confirmReset": "Reset all cases to built-in values on the server? This overwrites server/data/cases.json.",
+    "emptyDraft": "No cases in draft.",
+    "landingSectionTitle": "Landing — card in Cases grid",
+    "preview": "Preview",
+    "uploadFile": "Upload file",
+    "title": "Title",
+    "imageUrl": "Image URL (or keep after file upload)",
+    "portfolioSectionTitle": "Portfolio — blocks on the case page",
+    "addBlock": "Add block",
+    "blockNumber": "Block {{n}}",
+    "remove": "Remove",
+    "cardImage": "Block image",
+    "upload": "Upload",
+    "description": "Description",
+    "viewLinkLabel": "“View” link",
+    "cardImageUrl": "Block image URL (if not a file)",
+    "placeholderCaseImage": "/imgs/case/1.png",
+    "placeholderCardImageHint": "Empty = same as case preview"
   }
 }

@@ -1,10 +1,12 @@
 import React from "react";
 import { motion, useReducedMotion } from "motion/react";
+import { useTranslation } from "react-i18next";
 import logo from "../../../assets/logo.svg";
 
 const MotionHeader = motion.header;
 
 export default function Header() {
+  const { t } = useTranslation();
   const reducedMotion = useReducedMotion();
 
   return (
@@ -17,7 +19,7 @@ export default function Header() {
         ease: [0.16, 1, 0.3, 1],
       }}
     >
-      <div className="flex h-[62px] w-full items-center justify-between gap-3 rounded-2xl bg-[--color-hero-background]/50 px-3 backdrop-blur-[32px] sm:px-4 lg:rounded-[24px]">
+      <div className="flex h-[62px] w-full items-center justify-between gap-3 rounded-2xl bg-black/80 px-3 backdrop-blur-[96px] sm:px-4 lg:rounded-[24px]">
         <div className="flex min-w-0 items-center gap-2">
           <img
             src={logo}
@@ -27,12 +29,13 @@ export default function Header() {
             className="h-7 w-7 shrink-0 sm:h-8 sm:w-8"
           />
           <h1 className="truncate text-[16px] font-semibold sm:text-[17px] lg:text-[18px]">
-            Relay
+            {t("header.brand")}
           </h1>
         </div>
 
-        <button
-          className="flex h-[42px] cursor-pointer items-center gap-[10px] rounded-[10px] bg-white px-[16px] text-[16px] font-medium tracking-[-0.02em] text-black hover:scale-105 hover:shadow-[0_0_10px_2px_rgba(255,255,255,0.3)] active:scale-95 2xl:text-[18px]"
+        <a
+          href="/"
+          className="flex h-[42px] cursor-pointer items-center gap-[10px] rounded-[10px] bg-white px-[16px] text-[16px] font-medium tracking-[-0.02em] text-black 2xl:text-[18px]"
         >
           <svg
             width="18"
@@ -50,8 +53,8 @@ export default function Header() {
               strokeLinejoin="round"
             />
           </svg>
-          Back
-        </button>
+          {t("portfolio.back")}
+        </a>
       </div>
     </MotionHeader>
   );

@@ -4,9 +4,14 @@ import { createRoot } from "react-dom/client";
 import "./index.css";
 import router from "./app/router.jsx";
 import { RouterProvider } from "react-router-dom";
+import { hydrateCasesFromServer } from "./data/casesStorage.js";
 
-createRoot(document.getElementById("root")).render(
-  <StrictMode>
-    <RouterProvider router={router} />
-  </StrictMode>
-);
+const rootEl = document.getElementById("root");
+
+hydrateCasesFromServer().finally(() => {
+  createRoot(rootEl).render(
+    <StrictMode>
+      <RouterProvider router={router} />
+    </StrictMode>,
+  );
+});

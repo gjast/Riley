@@ -28,6 +28,7 @@ function AccordionItem({ item, isOpen, onToggle }) {
     <div className="overflow-hidden rounded-2xl border border-[#1E1E20] bg-(--color-line-background) transition-all duration-300 hover:border-[#2a2f38] md:rounded-[18px]">
       <button
         type="button"
+        aria-expanded={isOpen}
         onClick={() => onToggle(item.id)}
         className={`flex min-h-12 w-full cursor-pointer items-center justify-between gap-3 border-b-2 
           

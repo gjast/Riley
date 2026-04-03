@@ -1,8 +1,7 @@
-import {
-  createBrowserRouter,
-} from "react-router-dom";
+import { createBrowserRouter } from "react-router-dom";
 import Landing from "../pages/Landing/Landing";
 import Portfolio from "../pages/Portfolio/Portfolio";
+import Admin from "../pages/Admin/Admin";
 
 const router = createBrowserRouter([
   {
@@ -12,6 +11,10 @@ const router = createBrowserRouter([
   {
     path: "/portfolio/:caseId",
     element: <Portfolio />,
+  },
+  {
+    path: "/admin",
+    element: <Admin />,
   },
 ]);
 
