@@ -9,6 +9,9 @@
 #   • npm run docker:api — если 4000 занят, сам выставит PUBLISH_PORT=4001
 #   • вручную: PUBLISH_PORT=4001 docker compose up --build
 #   • или остановите процесс на 4000; «сырой» compose: npm run docker:api:raw
+#
+# Telegram: ${BOT_TOKEN} и ${TG_ID} берутся из корневого .env (каталог с compose).
+# Только server/.env без дублирования в корень — в контейнер не попадёт.
 
 services:
   api:
@@ -20,6 +23,12 @@ services:
     environment:
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:?Set ADMIN_PASSWORD in .env (see .env.example)}
       PORT: ${PORT:-8787}
+      # Форма «Начать» (POST /api/start) — без них API отдаёт 503 telegram_not_configured.
+      # Значения подставляются из .env рядом с compose (как у ADMIN_PASSWORD).
+      BOT_TOKEN: ${BOT_TOKEN:-}
+      TG_ID: ${TG_ID:-}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID:-}
     volumes:
       - relaylend_cases:/app/server/data
     restart: unless-stopped
