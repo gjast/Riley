@@ -5,15 +5,9 @@ const DESCRIPTION =
   "Experienced UI/UX and web designer with proven track record delivering clean, high-conversion interfaces and user-centered digital products. Specializing in modern websites, mobile apps, and intuitive design systems.";
 
 /**
- * Landing grid + portfolio detail cards for each case (factory defaults).
- * @type {Array<{
- *   id: string;
- *   img: string;
- *   title: string;
- *   cards: Array<{ title: string; description: string; href: string; img?: string }>;
- * }>}
+ * Кейсы для сетки на главной + скрытые service-* для /portfolio (excludeFromCasesGrid).
  */
-export const DEFAULT_CASES = [
+const DEFAULT_CASES_MAIN = [
   {
     id: "case-1",
     img: CASE_PREVIEW_IMG,
@@ -160,4 +154,99 @@ export const DEFAULT_CASES = [
       { title: "Vault — Resources hub", description: DESCRIPTION, href: "#" },
     ],
   },
+];
+
+/** Услуги на лендинге: клик ведёт на /portfolio/:portfolioCaseId */
+export const DEFAULT_LANDING_SERVICES = [
+  {
+    key: "web",
+    title: "",
+    price: "",
+    img: "./imgs/serv/web.png",
+    portfolioCaseId: "service-web",
+    position: "justify-start items-end",
+    positionImg: "h-auto pb-[15px]",
+  },
+  {
+    key: "landing",
+    title: "",
+    price: "",
+    img: "./imgs/serv/land.png",
+    portfolioCaseId: "service-landing",
+    position: "justify-end items-end",
+    positionImg: "h-full",
+  },
+  {
+    key: "logotypes",
+    title: "",
+    price: "",
+    img: "./imgs/serv/logo.png",
+    portfolioCaseId: "service-logotypes",
+    position: "justify-end items-start",
+    positionImg: "h-full",
+  },
+  {
+    key: "illustrations",
+    title: "",
+    price: "",
+    img: "./imgs/serv/pen.png",
+    portfolioCaseId: "service-illustrations",
+    position: "justify-end items-start",
+    positionImg: "h-full",
+  },
+];
+
+const SERVICE_CARD = {
+  description: DESCRIPTION,
+  href: "#",
+};
+
+/** Кейсы портфолио для услуг (не показываются в сетке Cases на главной). */
+export const DEFAULT_SERVICE_PORTFOLIO_CASES = [
+  {
+    id: "service-web",
+    img: CASE_PREVIEW_IMG,
+    title: "Веб — портфолио",
+    excludeFromCasesGrid: true,
+    cards: [
+      { title: "Веб — этап 1", ...SERVICE_CARD },
+      { title: "Веб — этап 2", ...SERVICE_CARD },
+      { title: "Веб — этап 3", ...SERVICE_CARD },
+    ],
+  },
+  {
+    id: "service-landing",
+    img: CASE_PREVIEW_IMG,
+    title: "Лендинг — портфолио",
+    excludeFromCasesGrid: true,
+    cards: [
+      { title: "Лендинг — блок 1", ...SERVICE_CARD },
+      { title: "Лендинг — блок 2", ...SERVICE_CARD },
+    ],
+  },
+  {
+    id: "service-logotypes",
+    img: CASE_PREVIEW_IMG,
+    title: "Логотипы — портфолио",
+    excludeFromCasesGrid: true,
+    cards: [
+      { title: "Логотипы — концепты", ...SERVICE_CARD },
+      { title: "Логотипы — финал", ...SERVICE_CARD },
+    ],
+  },
+  {
+    id: "service-illustrations",
+    img: CASE_PREVIEW_IMG,
+    title: "Иллюстрации — портфолио",
+    excludeFromCasesGrid: true,
+    cards: [
+      { title: "Иллюстрации — серия 1", ...SERVICE_CARD },
+      { title: "Иллюстрации — серия 2", ...SERVICE_CARD },
+    ],
+  },
+];
+
+export const DEFAULT_CASES = [
+  ...DEFAULT_CASES_MAIN,
+  ...DEFAULT_SERVICE_PORTFOLIO_CASES,
 ];

@@ -8,44 +8,58 @@ import Cases from "./blocks/Cases";
 import Start from "./blocks/Start";
 import Faq from "./blocks/Faq";
 import Footer from "./blocks/Footer";
+
+/** Логотипы в карусели: задайте href и при необходимости ariaLabel для каждого партнёра. */
 const LINE_ITEMS = [
   {
     img: "/imgs/coop/1.png",
     width: "144px",
     height: "52px",
+    href: "https://example.com",
+    ariaLabel: "Partner",
   },
   {
     img: "/imgs/coop/4.png",
     width: "150px",
     height: "34px",
+    href: "https://example.com",
+    ariaLabel: "Partner",
   },
-
   {
     img: "/imgs/coop/3.png",
     width: "144px",
     height: "52px",
+    href: "https://example.com",
+    ariaLabel: "Partner",
   },
   {
     img: "/imgs/coop/5.png",
     width: "108px",
     height: "46px",
+    href: "https://example.com",
+    ariaLabel: "Partner",
   },
   {
     img: "/imgs/coop/6.png",
     width: "144px",
     height: "52px",
+    href: "https://example.com",
+    ariaLabel: "Partner",
   },
   {
     img: "/imgs/coop/7.png",
     width: "144px",
     height: "42px",
+    href: "https://example.com",
+    ariaLabel: "Partner",
   },
   {
     img: "/imgs/coop/8.png",
     width: "124px",
     height: "42px",
-  }
-
+    href: "https://example.com",
+    ariaLabel: "Partner",
+  },
 ];
 
 const sectionScrollRevealClass =
@@ -66,7 +80,13 @@ export default function Landing() {
         speed={30}
         logoHeight={86}
         renderItem={(item) => (
-          <LineItem img={item.img} width={item.width} height={item.height} />
+          <LineItem
+            img={item.img}
+            width={item.width}
+            height={item.height}
+            href={item.href}
+            ariaLabel={item.ariaLabel}
+          />
         )}
       />
 

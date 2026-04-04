@@ -1,10 +1,20 @@
+import { Link } from "react-router-dom";
+
 const BORDER_GRAD =
 	"linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0) 48.56%, rgba(255, 255, 255, 0.04) 100%)";
 
-export default function Servic({ img, title, price, position, positionImg }) {
+export default function Servic({
+	img,
+	title,
+	price,
+	position,
+	positionImg,
+	to,
+}) {
 	return (
-		<a href={`#`}
-			className="relative flex h-[442px] w-full min-w-0 flex-col justify-between overflow-hidden rounded-[16px] 2xl:h-[512px]"
+		<Link
+			to={to}
+			className="relative flex h-[442px] w-full min-w-0 flex-col justify-between overflow-hidden rounded-[16px] 2xl:h-[512px] text-inherit no-underline outline-none visited:text-inherit focus:outline-none focus-visible:outline-none"
 			style={{
 				border: "1px solid transparent",
 				background: `linear-gradient(var(--color-line-background), var(--color-line-background)) padding-box, ${BORDER_GRAD} border-box`,
@@ -48,6 +58,6 @@ export default function Servic({ img, title, price, position, positionImg }) {
 					/>
 				</svg>
 			</div>
-		</a>
+		</Link>
 	);
 }

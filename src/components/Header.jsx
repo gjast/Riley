@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import logo from "../assets/logo.svg";
-import { useHeaderScrollProgress } from "../hooks/useHeaderScrollProgress";
+import { useHeaderHeroScrollProgress } from "../hooks/useHeaderHeroScrollProgress";
+import { useScrollToSection } from "../hooks/useScrollToSection";
 import LanguageSwitcher from "./LanguageSwitcher";
 import CTA from "./CTA";
 
@@ -10,10 +11,10 @@ const NAV_IDS = ["about", "services", "cases", "process", "faq"];
 export default function Header() {
 	const { t } = useTranslation();
 	const [menuOpen, setMenuOpen] = useState(false);
-	const scrollP = useHeaderScrollProgress(80);
-	const barP = menuOpen ? 1 : scrollP;
-
 	const closeMenu = useCallback(() => setMenuOpen(false), []);
+	const scrollToSection = useScrollToSection();
+	const scrollP = useHeaderHeroScrollProgress({ heroId: "about" });
+	const barP = menuOpen ? 1 : scrollP;
 
 	useEffect(() => {
 		if (!menuOpen) return;
@@ -58,6 +59,10 @@ export default function Header() {
 								<a
 									href={`#${id}`}
 									className="text-[15px] font-medium text-(--color-gray) transition-colors duration-300 hover:text-white xl:text-[16px] 2xl:text-[18px]"
+									onClick={(e) => {
+										e.preventDefault();
+										scrollToSection(id);
+									}}
 								>
 									{t(`header.nav.${id}`)}
 								</a>
@@ -72,7 +77,7 @@ export default function Header() {
 					</div>
 					<CTA
 						text={t("header.CTA")}
-						onClick={() => {}}
+						onClick={() => scrollToSection("process")}
 						className="hidden px-4 text-[14px] sm:px-5 lg:flex lg:text-[16px]"
 					/>
 
@@ -119,7 +124,11 @@ export default function Header() {
 									<a
 										href={`#${id}`}
 										className="block py-3.5 text-[16px] font-medium text-(--color-gray) transition-colors hover:text-white"
-										onClick={closeMenu}
+										onClick={(e) => {
+											e.preventDefault();
+											closeMenu();
+											scrollToSection(id);
+										}}
 									>
 										{t(`header.nav.${id}`)}
 									</a>
@@ -133,6 +142,7 @@ export default function Header() {
 								text={t("header.CTA")}
 								onClick={() => {
 									closeMenu();
+									scrollToSection("about");
 								}}
 								className="w-full text-[15px]"
 							/>

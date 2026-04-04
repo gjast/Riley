@@ -2,7 +2,9 @@ import { useCallback, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   getCases,
+  getLandingServices,
   migrateCasesPayload,
+  migrateLandingServicesPayload,
   resetCasesRemote,
   saveCasesRemote,
 } from "../../data/cases";
@@ -10,21 +12,38 @@ import { clearAdminToken, getAdminToken } from "../../data/adminSession";
 import AdminHeader from "./blocks/AdminHeader";
 import AdminToolbar from "./blocks/AdminToolbar";
 import AdminCaseEditor from "./blocks/AdminCaseEditor";
+import AdminLandingServicesEditor from "./blocks/AdminLandingServicesEditor";
 
 function cloneDraft() {
-  return structuredClone(getCases());
+  return {
+    cases: structuredClone(getCases()),
+    landingServices: structuredClone(getLandingServices()),
+  };
 }
 
 export default function AdminEditor({ onLogout }) {
   const { t } = useTranslation();
+  const [adminTab, setAdminTab] = useState("cases");
   const [draft, setDraft] = useState(cloneDraft);
-  const [selectedId, setSelectedId] = useState(() => getCases()[0]?.id ?? "");
+  const [selectedId, setSelectedId] = useState(
+    () => getCases()[0]?.id ?? "",
+  );
+  const [selectedServiceKey, setSelectedServiceKey] = useState(
+    () => getLandingServices()[0]?.key ?? "web",
+  );
   const [statusText, setStatusText] = useState("");
   const importRef = useRef(null);
 
   const selected =
-    draft.find((c) => c.id === selectedId) ?? draft[0] ?? null;
-  const selectedIndex = selected ? draft.findIndex((c) => c.id === selected.id) : -1;
+    draft.cases.find((c) => c.id === selectedId) ?? draft.cases[0] ?? null;
+  const selectedIndex = selected
+    ? draft.cases.findIndex((c) => c.id === selected.id)
+    : -1;
+
+  const selectedService =
+    draft.landingServices.find((s) => s.key === selectedServiceKey) ??
+    draft.landingServices[0] ??
+    null;
 
   const showStatus = useCallback((msg) => {
     setStatusText(msg);
@@ -39,9 +58,12 @@ export default function AdminEditor({ onLogout }) {
   const onChangeCase = useCallback(
     (patch) => {
       if (!selected) return;
-      setDraft((prev) =>
-        prev.map((c) => (c.id === selected.id ? { ...c, ...patch } : c)),
-      );
+      setDraft((prev) => ({
+        ...prev,
+        cases: prev.cases.map((c) =>
+          c.id === selected.id ? { ...c, ...patch } : c,
+        ),
+      }));
     },
     [selected],
   );
@@ -49,23 +71,25 @@ export default function AdminEditor({ onLogout }) {
   const onChangeCard = useCallback(
     (cardIndex, patch) => {
       if (!selected) return;
-      setDraft((prev) =>
-        prev.map((c) => {
+      setDraft((prev) => ({
+        ...prev,
+        cases: prev.cases.map((c) => {
           if (c.id !== selected.id) return c;
           const cards = c.cards.map((card, i) =>
             i === cardIndex ? { ...card, ...patch } : card,
           );
           return { ...c, cards };
         }),
-      );
+      }));
     },
     [selected],
   );
 
   const onAddCard = useCallback(() => {
     if (!selected) return;
-    setDraft((prev) =>
-      prev.map((c) => {
+    setDraft((prev) => ({
+      ...prev,
+      cases: prev.cases.map((c) => {
         if (c.id !== selected.id) return c;
         return {
           ...c,
@@ -79,21 +103,35 @@ export default function AdminEditor({ onLogout }) {
           ],
         };
       }),
-    );
+    }));
   }, [selected, t]);
 
   const onRemoveCard = useCallback(
     (cardIndex) => {
       if (!selected) return;
-      setDraft((prev) =>
-        prev.map((c) => {
+      setDraft((prev) => ({
+        ...prev,
+        cases: prev.cases.map((c) => {
           if (c.id !== selected.id) return c;
           const cards = c.cards.filter((_, i) => i !== cardIndex);
           return { ...c, cards };
         }),
-      );
+      }));
     },
     [selected],
+  );
+
+  const onChangeLandingService = useCallback(
+    (patch) => {
+      if (!selectedService) return;
+      setDraft((prev) => ({
+        ...prev,
+        landingServices: prev.landingServices.map((s) =>
+          s.key === selectedService.key ? { ...s, ...patch } : s,
+        ),
+      }));
+    },
+    [selectedService],
   );
 
   const handleSave = async () => {
@@ -128,7 +166,8 @@ export default function AdminEditor({ onLogout }) {
     if (result.ok) {
       const next = cloneDraft();
       setDraft(next);
-      setSelectedId(next[0]?.id ?? "");
+      setSelectedId(next.cases[0]?.id ?? "");
+      setSelectedServiceKey(next.landingServices[0]?.key ?? "web");
       showStatus(t("admin.status.reset"));
     } else if (result.status === 401 || result.status === 403) {
       showStatus(t("admin.status.sessionExpired"));
@@ -157,18 +196,53 @@ export default function AdminEditor({ onLogout }) {
     try {
       const text = await file.text();
       const parsed = JSON.parse(text);
-      const migrated = migrateCasesPayload(parsed);
-      if (!migrated) {
-        showStatus(t("admin.status.importInvalid"));
+      if (Array.isArray(parsed)) {
+        const migrated = migrateCasesPayload(parsed);
+        if (!migrated) {
+          showStatus(t("admin.status.importInvalid"));
+          return;
+        }
+        setDraft((prev) => ({
+          cases: migrated,
+          landingServices: prev.landingServices,
+        }));
+        setSelectedId(migrated[0]?.id ?? "");
+        showStatus(t("admin.status.importDraft"));
         return;
       }
-      setDraft(migrated);
-      setSelectedId(migrated[0]?.id ?? "");
-      showStatus(t("admin.status.importDraft"));
+      if (
+        parsed &&
+        typeof parsed === "object" &&
+        Array.isArray(parsed.cases)
+      ) {
+        const cases = migrateCasesPayload(parsed.cases);
+        if (!cases) {
+          showStatus(t("admin.status.importInvalid"));
+          return;
+        }
+        const landing = migrateLandingServicesPayload(parsed.landingServices);
+        setDraft((prev) => ({
+          cases,
+          landingServices: landing ?? prev.landingServices,
+        }));
+        setSelectedId(cases[0]?.id ?? "");
+        if (landing?.[0]?.key) {
+          setSelectedServiceKey(landing[0].key);
+        }
+        showStatus(t("admin.status.importDraft"));
+        return;
+      }
+      showStatus(t("admin.status.importInvalid"));
     } catch {
       showStatus(t("admin.status.importReadError"));
     }
   };
+
+  const tabBtn =
+    "h-[42px] rounded-[10px] px-5 text-[14px] font-medium tracking-[-0.02em] transition-colors";
+  const tabActive = "bg-white text-black";
+  const tabIdle =
+    "border border-[#252526] bg-transparent text-white hover:border-[#3a3a3c]";
 
   return (
     <div className="flex min-h-screen flex-col items-center bg-(--color-background) pb-16 pt-[calc(25px+42px+48px)]">
@@ -184,6 +258,23 @@ export default function AdminEditor({ onLogout }) {
           </p>
         </div>
 
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            className={`${tabBtn} ${adminTab === "cases" ? tabActive : tabIdle}`}
+            onClick={() => setAdminTab("cases")}
+          >
+            {t("admin.tabCases")}
+          </button>
+          <button
+            type="button"
+            className={`${tabBtn} ${adminTab === "services" ? tabActive : tabIdle}`}
+            onClick={() => setAdminTab("services")}
+          >
+            {t("admin.tabServices")}
+          </button>
+        </div>
+
         <AdminToolbar
           onSave={handleSave}
           onReset={handleReset}
@@ -194,32 +285,69 @@ export default function AdminEditor({ onLogout }) {
           statusText={statusText}
         />
 
-        <div className="rounded-[16px] border border-[#252526] bg-[#101012]/50 p-4 sm:p-5">
-          <label className="mb-2 block text-[13px] font-medium text-[#8B8B8B]" htmlFor="admin-case-select">
-            {t("admin.selectCase")}
-          </label>
-          <select
-            id="admin-case-select"
-            className="w-full rounded-xl border border-[#252526] bg-[#101012] px-3 py-2.5 text-[15px] text-white outline-none focus:border-[#3a3a3c]"
-            value={selected?.id ?? ""}
-            onChange={(e) => setSelectedId(e.target.value)}
-          >
-            {draft.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.title || c.id}
-              </option>
-            ))}
-          </select>
-        </div>
+        {adminTab === "cases" ? (
+          <>
+            <div className="rounded-[16px] border border-[#252526] bg-[#101012]/50 p-4 sm:p-5">
+              <label
+                className="mb-2 block text-[13px] font-medium text-[#8B8B8B]"
+                htmlFor="admin-case-select"
+              >
+                {t("admin.selectCase")}
+              </label>
+              <select
+                id="admin-case-select"
+                className="w-full rounded-xl border border-[#252526] bg-[#101012] px-3 py-2.5 text-[15px] text-white outline-none focus:border-[#3a3a3c]"
+                value={selected?.id ?? ""}
+                onChange={(e) => setSelectedId(e.target.value)}
+              >
+                {draft.cases.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.excludeFromCasesGrid ? `[${t("admin.serviceCaseBadge")}] ` : ""}
+                    {c.title || c.id}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-        <AdminCaseEditor
-          caseItem={selected}
-          caseIndex={selectedIndex}
-          onChangeCase={onChangeCase}
-          onChangeCard={onChangeCard}
-          onAddCard={onAddCard}
-          onRemoveCard={onRemoveCard}
-        />
+            <AdminCaseEditor
+              caseItem={selected}
+              caseIndex={selectedIndex}
+              onChangeCase={onChangeCase}
+              onChangeCard={onChangeCard}
+              onAddCard={onAddCard}
+              onRemoveCard={onRemoveCard}
+            />
+          </>
+        ) : (
+          <>
+            <div className="rounded-[16px] border border-[#252526] bg-[#101012]/50 p-4 sm:p-5">
+              <label
+                className="mb-2 block text-[13px] font-medium text-[#8B8B8B]"
+                htmlFor="admin-service-select"
+              >
+                {t("admin.selectService")}
+              </label>
+              <select
+                id="admin-service-select"
+                className="w-full rounded-xl border border-[#252526] bg-[#101012] px-3 py-2.5 text-[15px] text-white outline-none focus:border-[#3a3a3c]"
+                value={selectedService?.key ?? ""}
+                onChange={(e) => setSelectedServiceKey(e.target.value)}
+              >
+                {draft.landingServices.map((s) => (
+                  <option key={s.key} value={s.key}>
+                    {s.key}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <AdminLandingServicesEditor
+              serviceItem={selectedService}
+              casesForSelect={draft.cases}
+              onChange={onChangeLandingService}
+            />
+          </>
+        )}
 
         <p className="text-center text-[13px] leading-[150%] text-[#76767A]">
           {t("admin.footerNoteServer")}

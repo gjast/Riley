@@ -3,7 +3,10 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { randomBytes } from "node:crypto";
-import { DEFAULT_CASES } from "../src/data/casesDefaults.js";
+import {
+  DEFAULT_CASES,
+  DEFAULT_LANDING_SERVICES,
+} from "../src/data/casesDefaults.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = path.join(__dirname, "data");
@@ -157,7 +160,25 @@ const server = http.createServer(async (req, res) => {
   try {
     if (url === "/api/cases" && req.method === "GET") {
       const stored = await readCasesFile();
-      const payload = Array.isArray(stored) ? stored : DEFAULT_CASES;
+      let payload;
+      if (!stored) {
+        payload = {
+          cases: DEFAULT_CASES,
+          landingServices: DEFAULT_LANDING_SERVICES,
+        };
+      } else if (Array.isArray(stored)) {
+        payload = {
+          cases: stored,
+          landingServices: DEFAULT_LANDING_SERVICES,
+        };
+      } else {
+        payload = {
+          cases: Array.isArray(stored.cases) ? stored.cases : DEFAULT_CASES,
+          landingServices: Array.isArray(stored.landingServices)
+            ? stored.landingServices
+            : DEFAULT_LANDING_SERVICES,
+        };
+      }
       return sendJson(res, 200, payload);
     }
 
@@ -197,10 +218,35 @@ const server = http.createServer(async (req, res) => {
       } catch {
         return sendJson(res, 400, { error: "Invalid JSON" });
       }
-      if (!Array.isArray(data)) {
-        return sendJson(res, 400, { error: "Body must be a JSON array" });
+      if (Array.isArray(data)) {
+        const existing = await readCasesFile();
+        let landing = DEFAULT_LANDING_SERVICES;
+        if (
+          existing &&
+          typeof existing === "object" &&
+          !Array.isArray(existing) &&
+          Array.isArray(existing.landingServices)
+        ) {
+          landing = existing.landingServices;
+        }
+        await writeCasesFile({ cases: data, landingServices: landing });
+        return sendJson(res, 200, { ok: true });
       }
-      await writeCasesFile(data);
+      if (!data || typeof data !== "object") {
+        return sendJson(res, 400, { error: "Invalid JSON body" });
+      }
+      if (!Array.isArray(data.cases)) {
+        return sendJson(res, 400, {
+          error: "Body must be a cases array (legacy) or { cases, landingServices }",
+        });
+      }
+      const landing = Array.isArray(data.landingServices)
+        ? data.landingServices
+        : DEFAULT_LANDING_SERVICES;
+      await writeCasesFile({
+        cases: data.cases,
+        landingServices: landing,
+      });
       return sendJson(res, 200, { ok: true });
     }
 

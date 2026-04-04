@@ -1,6 +1,6 @@
 import { useId, useMemo } from "react";
 
-function StarGraphic({ idSuffix }) {
+function StarGraphic({ idSuffix, blur = true }) {
 	const filterId = `star-soft-${idSuffix}`;
 	const gradientId = `star-grad-${idSuffix}`;
 
@@ -20,24 +20,26 @@ function StarGraphic({ idSuffix }) {
 				strokeWidth="2"
 				strokeLinecap="round"
 			/>
-			<g filter={`url(#${filterId})`}>
+			<g filter={blur ? `url(#${filterId})` : undefined}>
 				<path
 					d="M216.297 15.0182L216.495 27.0882L224.596 36.4474L212.219 36.2792L202.859 43.9028L202.661 31.8328L194.56 22.4735L206.937 22.6417L216.297 15.0182Z"
 					fill="white"
 				/>
 			</g>
 			<defs>
-				<filter
-					id={filterId}
-					x="186.56"
-					y="7.01807"
-					width="46.0352"
-					height="44.8848"
-					filterUnits="userSpaceOnUse"
-					colorInterpolationFilters="sRGB"
-				>
-					<feGaussianBlur in="SourceGraphic" stdDeviation="1.25" />
-				</filter>
+				{blur ? (
+					<filter
+						id={filterId}
+						x="186.56"
+						y="7.01807"
+						width="46.0352"
+						height="44.8848"
+						filterUnits="userSpaceOnUse"
+						colorInterpolationFilters="sRGB"
+					>
+						<feGaussianBlur in="SourceGraphic" stdDeviation="1.25" />
+					</filter>
+				) : null}
 				<linearGradient
 					id={gradientId}
 					x1="209.664"
@@ -80,9 +82,16 @@ function speedCurveToEasing(speedCurve) {
  * @param {number} angle — направление дрейфа, градусы
  * @param {number} [medianScale=0.26] — средний масштаб SVG (размер «звезды»)
  * @param {number} [scaleJitter=0.1] — разброс масштаба вокруг medianScale
+ * @param {number} [scaleMin=0.06] — нижняя граница масштаба после случайного выбора
+ * @param {number} [scaleMax=2.5] — верхняя граница масштаба (макс. размер звезды)
  * @param {number} spawnLeftMin / spawnLeftMax — горизонталь зоны спавна (% от контейнера; можно за 0–100, в т.ч. отриц.)
  * @param {number} spawnTopMin / spawnTopMax — вертикаль зоны спавна (%)
  * @param {0|1|2|3} [speedCurve=0] — характер скорости по времени одного цикла
+ * @param {boolean} [starBlur=true] — размытие «хвоста» звезды в SVG
+ * @param {"default"|"uniform"|"size"} [starOpacityMode="default"] — прозрачность: как сейчас; все одной яркости; меньше звезда — тусклее
+ * @param {number} [starOpacityUniform=0.36] — при mode uniform — пик opacity у всех звёзд (анимация 0→peak→0)
+ * @param {number} [starOpacitySmall=0.14] — при mode size — пик у минимального масштаба
+ * @param {number} [starOpacityLarge=0.48] — при mode size — пик у максимального масштаба
  */
 export default function StarfieldBackground({
 	angle = -28,
@@ -90,11 +99,18 @@ export default function StarfieldBackground({
 	driftDistance = 110,
 	medianScale = 0.26,
 	scaleJitter = 0.1,
+	scaleMin = 0.06,
+	scaleMax = 2.5,
 	spawnLeftMin = -48,
 	spawnLeftMax = 52,
 	spawnTopMin = 96,
 	spawnTopMax = 118,
 	speedCurve = 0,
+	starBlur = true,
+	starOpacityMode = "default",
+	starOpacityUniform = 0.36,
+	starOpacitySmall = 0.14,
+	starOpacityLarge = 0.48,
 	className = "",
 }) {
 	const instanceId = useId().replace(/:/g, "");
@@ -105,6 +121,7 @@ export default function StarfieldBackground({
 
 	const lo = medianScale - scaleJitter;
 	const hi = medianScale + scaleJitter;
+	const opacityMode = String(starOpacityMode || "default").toLowerCase();
 
 	const stars = useMemo(() => {
 		const leftA = Math.min(spawnLeftMin, spawnLeftMax);
@@ -112,23 +129,50 @@ export default function StarfieldBackground({
 		const topA = Math.min(spawnTopMin, spawnTopMax);
 		const topB = Math.max(spawnTopMin, spawnTopMax);
 
-		return Array.from({ length: count }, (_, i) => ({
-			key: i,
-			left: rand(leftA, leftB),
-			top: rand(topA, topB),
-			scale: clamp(rand(lo, hi), 0.06, 2.5),
-			opacityPeak: rand(0.14, 0.48),
-			duration: rand(12, 48),
-			delay: -rand(0, 55),
-		}));
+		const sMin = Math.min(scaleMin, scaleMax);
+		const sMax = Math.max(scaleMin, scaleMax);
+
+		const loSmall = Math.min(starOpacitySmall, starOpacityLarge);
+		const hiLarge = Math.max(starOpacitySmall, starOpacityLarge);
+
+		return Array.from({ length: count }, (_, i) => {
+			const scale = clamp(rand(lo, hi), sMin, sMax);
+
+			let opacityPeak;
+			if (opacityMode === "uniform") {
+				opacityPeak = clamp(starOpacityUniform, 0.02, 1);
+			} else if (opacityMode === "size") {
+				const t =
+					sMax > sMin ? clamp((scale - sMin) / (sMax - sMin), 0, 1) : 1;
+				opacityPeak = clamp(loSmall + t * (hiLarge - loSmall), 0.02, 1);
+			} else {
+				opacityPeak = rand(0.14, 0.48);
+			}
+
+			return {
+				key: i,
+				left: rand(leftA, leftB),
+				top: rand(topA, topB),
+				scale,
+				opacityPeak,
+				duration: rand(12, 48),
+				delay: -rand(0, 55),
+			};
+		});
 	}, [
 		count,
 		lo,
 		hi,
+		opacityMode,
+		scaleMin,
+		scaleMax,
 		spawnLeftMin,
 		spawnLeftMax,
 		spawnTopMin,
 		spawnTopMax,
+		starOpacityUniform,
+		starOpacitySmall,
+		starOpacityLarge,
 	]);
 
 	return (
@@ -160,7 +204,7 @@ export default function StarfieldBackground({
 							"--drift-delay": `${s.delay}s`,
 						}}
 					>
-						<StarGraphic idSuffix={`${instanceId}-${s.key}`} />
+						<StarGraphic idSuffix={`${instanceId}-${s.key}`} blur={starBlur} />
 					</div>
 				</div>
 			))}

@@ -2,14 +2,12 @@ import React from "react";
 import { motion, useReducedMotion } from "motion/react";
 import { useTranslation } from "react-i18next";
 import logo from "../../../assets/logo.svg";
-import { useHeaderScrollProgress } from "../../../hooks/useHeaderScrollProgress";
 
 const MotionHeader = motion.header;
 
 export default function Header() {
   const { t } = useTranslation();
   const reducedMotion = useReducedMotion();
-  const scrollP = useHeaderScrollProgress(80);
 
   return (
     <MotionHeader
@@ -21,14 +19,7 @@ export default function Header() {
         ease: [0.16, 1, 0.3, 1],
       }}
     >
-      <div
-        className="flex h-[62px] w-full items-center justify-between gap-3 rounded-2xl px-3 sm:px-4 lg:rounded-[24px]"
-        style={{
-          backgroundColor: `rgba(0,0,0,${0.8 * scrollP})`,
-          backdropFilter: `blur(${96 * scrollP}px)`,
-          WebkitBackdropFilter: `blur(${96 * scrollP}px)`,
-        }}
-      >
+      <div className="flex h-[62px] w-full items-center justify-between gap-3 rounded-2xl bg-black/80 px-3 backdrop-blur-[96px] sm:px-4 lg:rounded-[24px]">
         <div className="flex min-w-0 items-center gap-2">
           <img
             src={logo}
