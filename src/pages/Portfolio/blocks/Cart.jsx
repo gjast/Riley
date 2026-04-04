@@ -6,15 +6,15 @@ export default function Cart({ img, title, description, href }) {
   return (
     <div className="flex-1 flex flex-col gap-[24px]">
       <div
-        className="overflow-hidden max-h-[555px] rounded-[16px]"
+        className="overflow-hidden  rounded-[16px] aspect-square"
         style={{
           border: "1px solid transparent",
           background: `linear-gradient(var(--color-line-background), var(--color-line-background)) padding-box, linear-gradient(180deg, #1E1E20 0%, #101012 50%, #1E1E20 100%) border-box`,
         }}
       >
-        <div className="w-full aspect-square relative">
+        <div className="w-full h-full relative">
           <img
-            className="absolute inset-0 w-full h-full object-cover"
+            className="absolute inset-0 w-full aspect-square object-cover"
             src={img}
             alt={title}
           />
