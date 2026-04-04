@@ -76,13 +76,23 @@
     "contactLabel": "Contact address",
     "commentLabel": "Comment",
     "placeholderComment": "Describe your project...",
-    "clear": "Clear"
+    "clear": "Clear",
+    "submitting": "Sending…",
+    "submitSuccess": "Request sent. We’ll get back to you soon.",
+    "validationBudget": "Set a budget or pick a value from the list.",
+    "validationDeadline": "Set a timeline or pick a value from the list.",
+    "validationContact": "Add a contact (e.g. @username).",
+    "validationComment": "Add a project comment.",
+    "validationGeneric": "Please make sure all fields are filled in.",
+    "errorNetwork": "Could not reach the server. Check your connection and that the API is running.",
+    "errorSend": "Could not send the request. Try again later.",
+    "errorTelegramConfig": "Telegram is not configured on the server: set BOT_TOKEN and TG_ID in .env and restart the API."
   },
   "footer": {
     "heading": "Ready to transform your product?",
     "body": "From wireframes to high-fidelity UI. Clean, scalable, and developer-ready designs.",
     "getStarted": "Get started",
-    "viewPortfolio": "View portfolio"
+    "viewPortfolio": "Get started"
   },
   "portfolio": {
     "back": "Back",

@@ -1,6 +1,14 @@
 # Запуск бэкенда: docker compose up --build
-# Порты: PORT — порт процесса внутри контейнера; API_PORT — порт на хосте (по умолчанию = 8787 и для хоста, если API_PORT не задан)
-# После смены PORT/API_PORT: docker compose up -d --force-recreate
+#
+# Схема портов:
+#   PORT — порт Node внутри контейнера (по умолчанию 8787).
+#   На хост публикуется: PUBLISH_PORT, если задан, иначе API_PORT из .env, иначе 8787.
+#
+# «bind: address already in use» на 0.0.0.0:4000 — на Mac уже слушает этот порт
+# (часто второй терминал с npm run dev, старый контейнер или другой сервис):
+#   1) Остановите локальный API / Vite или: docker compose down
+#   2) Либо один раз без правки .env:  PUBLISH_PORT=4001 docker compose up --build
+#      (тогда API с хоста: http://127.0.0.1:4001; в .env для Vite укажите API_PORT=4001 только если проксируете на этот контейнер)
 
 services:
   api:
@@ -8,7 +16,7 @@ services:
       context: .
       dockerfile: Dockerfile.api
     ports:
-      - "${API_PORT:-8787}:${PORT:-8787}"
+      - "${PUBLISH_PORT:-${API_PORT:-8787}}:${PORT:-8787}"
     environment:
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:?Set ADMIN_PASSWORD in .env (see .env.example)}
       PORT: ${PORT:-8787}

@@ -35,7 +35,7 @@ export default function Hero() {
     <section
       id="about"
       className="relative mb-[26px] flex
-      min-h-[calc(100vh-211px)]
+      min-h-[calc(100vh-201px)]
       sm:min-h-[calc(100vh-111px)] w-full sm:w-[calc(100%-50px)] justify-center overflow-hidden rounded-b-[24px] border-t-0 bg-[--color-hero-background]"
       style={{
         boxShadow: "inset 0 0 0 1px #1E1E20, inset 0 -1px 0 0 #1E1E20",
@@ -92,8 +92,8 @@ starOpacityLarge={0.8}
       </M.div>
 
       <M.img
-        className="absolute bottom-0 right-1/2 z-1 translate-x-1/2 object-cover"
-        src="/imgs/Hero.png"
+        className="absolute bottom-0 right-1/2 z-1 w-auto translate-x-1/2 object-cover object-bottom max-sm:min-w-[118%] max-sm:h-[min(52vh,480px)] sm:min-w-0 sm:h-auto"
+        src="/imgs/Hero.webp"
         alt=""
         initial={reducedMotion ? false : { opacity: 0, y: 36 }}
         whileInView={reducedMotion ? undefined : { opacity: 1, y: 0 }}

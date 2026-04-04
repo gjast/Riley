@@ -76,13 +76,23 @@
     "contactLabel": "Контакт",
     "commentLabel": "Комментарий",
     "placeholderComment": "Опишите проект...",
-    "clear": "Очистить"
+    "clear": "Очистить",
+    "submitting": "Отправка…",
+    "submitSuccess": "Заявка отправлена. Скоро свяжемся.",
+    "validationBudget": "Укажите бюджет или выберите значение из списка.",
+    "validationDeadline": "Укажите срок или выберите значение из списка.",
+    "validationContact": "Укажите контакт (например @username).",
+    "validationComment": "Заполните комментарий к проекту.",
+    "validationGeneric": "Проверьте, что все поля заполнены.",
+    "errorNetwork": "Не удалось связаться с сервером. Проверьте соединение и что API запущен.",
+    "errorSend": "Не удалось отправить заявку. Попробуйте позже.",
+    "errorTelegramConfig": "Сервер не настроен для Telegram: задайте BOT_TOKEN и TG_ID в .env и перезапустите API."
   },
   "footer": {
     "heading": "Готовы преобразовать продукт?",
     "body": "От вайрфреймов до финального UI. Чистый, масштабируемый дизайн, готовый к разработке.",
     "getStarted": "Начать",
-    "viewPortfolio": "смотреть портфолио"
+    "viewPortfolio": "Начать"
   },
   "portfolio": {
     "back": "Назад",

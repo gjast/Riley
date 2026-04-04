@@ -35,9 +35,9 @@ export default function Header() {
 			className="fixed inset-x-0 top-3 z-20 mx-auto w-[calc(100%-2rem)] max-w-[1440px] overflow-visible sm:top-4 sm:w-[calc(100%-3rem)] lg:top-6 lg:w-[calc(100%-100px)]"
 		>
 			<div
-				className="relative z-30 flex items-center justify-between gap-3 rounded-2xl px-3 py-2.5 sm:px-4 sm:py-3 lg:rounded-[24px] lg:px-4"
+				className="relative z-30 flex items-center justify-between gap-3 rounded-2xl px-3 py-2.5 sm:px-4 sm:py-3 lg:px-4"
 				style={{
-					backgroundColor: `rgba(0,0,0,${0.8 * barP})`,
+					backgroundColor: `rgba(0,0,0,${0.65 * barP})`,
 					backdropFilter: `blur(${96 * barP}px)`,
 					WebkitBackdropFilter: `blur(${96 * barP}px)`,
 				}}

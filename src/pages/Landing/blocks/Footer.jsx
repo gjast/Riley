@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import CTA from "../../../components/CTA";
+import { useScrollToSection } from "../../../hooks/useScrollToSection";
 
 /** Порядок: Lolzteam → Exploit → Pinterest → Behance */
 const FOOTER_SOCIAL_LINKS = [
@@ -7,6 +8,11 @@ const FOOTER_SOCIAL_LINKS = [
 		src: "/imgs/footer/Group-3.svg",
 		href: "https://lolz.live/relay/",
 		label: "Lolzteam",
+	},
+	{
+		src: "/imgs/footer/Group-2.svg",
+		href: "https://t.me/relayportfolio_lzt",
+		label: "Telegram",
 	},
 	{
 		src: "/imgs/footer/Group-4.svg",
@@ -27,7 +33,7 @@ const FOOTER_SOCIAL_LINKS = [
 
 export default function Footer() {
 	const { t } = useTranslation();
-
+	const scrollToSection = useScrollToSection();
 	return (
 		<div
 			className="relative mx-auto flex w-[calc(100%-2rem)] max-w-[1440px] flex-col justify-between gap-10 overflow-hidden rounded-2xl sm:w-[calc(100%-3rem)] sm:gap-12 md:gap-14 lg:w-[calc(100%-100px)] lg:gap-16"
@@ -59,11 +65,9 @@ export default function Footer() {
 
 			<div className="relative z-10 flex flex-col gap-8 px-4 pb-8 pt-0 sm:px-6 sm:pb-10 md:flex-row md:items-end md:justify-between md:gap-6 md:px-10 md:pb-12 lg:px-12 lg:pb-[51px]">
 				<div className="flex items-center  flex-row gap-3 mx-auto sm:mx-0 rounded-[10px] bg-[#1D1E20] w-max h-[42px] sm:items-center">
-					<p className="px-4 py-3 text-center text-base font-medium leading-[150%] tracking-[-0.02em] text-[#A2A2A2] sm:px-6 sm:py-0 sm:text-left md:px-[24px] md:text-[18px]">
-						{t("footer.getStarted")}
-					</p>
+					
 					<div className="flex justify-center sm:justify-start sm:pr-1">
-						<CTA text={t("footer.viewPortfolio")} onClick={() => {}} />
+						<CTA text={t("footer.viewPortfolio")} onClick={() => {scrollToSection("process")}} />
 					</div>
 				</div>
 

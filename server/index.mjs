@@ -12,6 +12,11 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = path.join(__dirname, "data");
 const DATA_FILE = path.join(DATA_DIR, "cases.json");
 
+/**
+ * Применяет строку KEY=VAL из .env.
+ * Всегда записывает в process.env (последний прочитанный файл побеждает), иначе
+ * пустые BOT_TOKEN/TG_ID из окружения IDE/shell/Docker перекрывают реальные значения из файла.
+ */
 function applyEnvLine(t) {
   if (!t || t.startsWith("#")) return;
   let line = t;
@@ -22,6 +27,10 @@ function applyEnvLine(t) {
   if (i === -1) return;
   const key = line.slice(0, i).trim();
   if (!key) return;
+  if (key === "PORT" || key === "API_PORT") {
+    const cur = process.env[key];
+    if (cur !== undefined && String(cur).trim() !== "") return;
+  }
   let val = line.slice(i + 1).trim();
   if (
     (val.startsWith('"') && val.endsWith('"')) ||
@@ -29,10 +38,7 @@ function applyEnvLine(t) {
   ) {
     val = val.slice(1, -1);
   }
-  const cur = process.env[key];
-  if (cur === undefined || String(cur).trim() === "") {
-    process.env[key] = val;
-  }
+  process.env[key] = val;
 }
 
 async function loadDotEnv() {
@@ -92,6 +98,128 @@ function readBody(req) {
     );
     req.on("error", reject);
   });
+}
+
+function readBodyLimited(req, maxBytes) {
+  return new Promise((resolve, reject) => {
+    const chunks = [];
+    let total = 0;
+    req.on("data", (c) => {
+      total += c.length;
+      if (total > maxBytes) {
+        req.destroy();
+        reject(new Error("Body too large"));
+        return;
+      }
+      chunks.push(c);
+    });
+    req.on("end", () =>
+      resolve(Buffer.concat(chunks).toString("utf8")),
+    );
+    req.on("error", reject);
+  });
+}
+
+function telegramConfig() {
+  const token = (
+    process.env.TELEGRAM_BOT_TOKEN ||
+    process.env.BOT_TOKEN ||
+    ""
+  ).trim();
+  const chatId = (
+    process.env.TELEGRAM_CHAT_ID ||
+    process.env.TG_ID ||
+    ""
+  ).trim();
+  return { token, chatId };
+}
+
+/** Telegram ждёт chat_id числом (в т.ч. отрицательным для групп). */
+function parseTelegramChatId(raw) {
+  const s = String(raw ?? "").trim();
+  if (/^-?\d+$/.test(s)) return Number(s);
+  return s;
+}
+
+function clampStr(s, max) {
+  const t = String(s ?? "").trim();
+  return t.length > max ? t.slice(0, max) : t;
+}
+
+function escapeHtml(s) {
+  return String(s)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+async function sendTelegramStartForm(body) {
+  const { token, chatId } = telegramConfig();
+  if (!token || !chatId) {
+    return { ok: false, status: 503, error: "telegram_not_configured" };
+  }
+
+  const service = clampStr(body.service, 120);
+  const budget = clampStr(body.budget, 40);
+  const deadline = clampStr(body.deadline, 40);
+  const contact = clampStr(body.contact, 220);
+  const comment = clampStr(body.comment, 3500);
+
+  if (!service || !budget || !deadline || !contact || !comment) {
+    return { ok: false, status: 400, error: "validation_failed" };
+  }
+
+  const text = [
+    "",
+    `Услуга: ${escapeHtml(service)}`,
+    `Бюджет: ${escapeHtml(budget)}`,
+    `Срок: ${escapeHtml(deadline)}`,
+    `Контакт: <code>${escapeHtml(contact)}</code>`,
+    "",
+    "Комментарий:",
+    escapeHtml(comment),
+  ].join("\n");
+
+  const url = `https://api.telegram.org/bot${token}/sendMessage`;
+  const chat_id = parseTelegramChatId(chatId);
+  let tgRes;
+  try {
+    tgRes = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        chat_id,
+        text,
+        parse_mode: "HTML",
+        disable_web_page_preview: true,
+      }),
+    });
+  } catch (e) {
+    console.error("[relaylend-server] Telegram fetch failed:", e?.message || e);
+    return { ok: false, status: 502, error: "telegram_unreachable" };
+  }
+
+  let tgJson;
+  try {
+    tgJson = await tgRes.json();
+  } catch {
+    return { ok: false, status: 502, error: "telegram_bad_response" };
+  }
+
+  if (!tgJson.ok) {
+    console.error(
+      "[relaylend-server] Telegram API:",
+      tgJson.description || tgJson.error_code || tgJson,
+    );
+    return {
+      ok: false,
+      status: 502,
+      error: "telegram_api_error",
+      detail: tgJson.description || String(tgJson.error_code || ""),
+    };
+  }
+
+  return { ok: true, status: 200 };
 }
 
 function sendJson(res, status, obj) {
@@ -158,6 +286,28 @@ const server = http.createServer(async (req, res) => {
   }
 
   try {
+    if (url === "/api/start" && req.method === "POST") {
+      let raw;
+      try {
+        raw = await readBodyLimited(req, 64 * 1024);
+      } catch {
+        return sendJson(res, 413, { error: "Payload too large" });
+      }
+      let body;
+      try {
+        body = JSON.parse(raw || "{}");
+      } catch {
+        return sendJson(res, 400, { error: "Invalid JSON" });
+      }
+      const result = await sendTelegramStartForm(body);
+      if (!result.ok) {
+        const payload = { error: result.error };
+        if (result.detail) payload.detail = result.detail;
+        return sendJson(res, result.status, payload);
+      }
+      return sendJson(res, 200, { ok: true });
+    }
+
     if (url === "/api/cases" && req.method === "GET") {
       const stored = await readCasesFile();
       let payload;
@@ -258,10 +408,25 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
+server.on("error", (err) => {
+  if (err?.code === "EADDRINUSE") {
+    console.error(
+      `[relaylend-server] Порт ${PORT} уже занят (EADDRINUSE). ` +
+        `Освободите порт: например «lsof -i :${PORT}» и завершите процесс, либо остановите контейнер Docker, который слушает этот порт, затем снова «npm run dev».`,
+    );
+    process.exit(1);
+  }
+  throw err;
+});
+
 server.listen(PORT, () => {
   console.log(`[relaylend-server] http://127.0.0.1:${PORT}`);
   console.log(`[relaylend-server] cases file: ${DATA_FILE}`);
   console.log(
     `[relaylend-server] ADMIN_PASSWORD: ${process.env.ADMIN_PASSWORD?.trim() ? "set" : "MISSING (login will return 503)"}`,
+  );
+  const tg = telegramConfig();
+  console.log(
+    `[relaylend-server] Telegram (форма «Начать»): ${tg.token && tg.chatId ? "BOT_TOKEN + TG_ID (или TELEGRAM_*) заданы" : "не настроено — POST /api/start вернёт 503"}`,
   );
 });
