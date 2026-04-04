@@ -7,12 +7,14 @@ import {
   migrateLandingServicesPayload,
   resetCasesRemote,
   saveCasesRemote,
+  stripLegacyServiceCases,
 } from "../../data/cases";
 import { clearAdminToken, getAdminToken } from "../../data/adminSession";
 import AdminHeader from "./blocks/AdminHeader";
 import AdminToolbar from "./blocks/AdminToolbar";
 import AdminCaseEditor from "./blocks/AdminCaseEditor";
 import AdminLandingServicesEditor from "./blocks/AdminLandingServicesEditor";
+import AdminPortfolioCardsSection from "./blocks/AdminPortfolioCardsSection";
 
 function cloneDraft() {
   return {
@@ -121,17 +123,61 @@ export default function AdminEditor({ onLogout }) {
     [selected],
   );
 
-  const onChangeLandingService = useCallback(
-    (patch) => {
-      if (!selectedService) return;
+  const svcKey = selectedService?.key ?? "";
+
+  const onChangeServicePortfolioCard = useCallback(
+    (cardIndex, patch) => {
+      if (!svcKey) return;
       setDraft((prev) => ({
         ...prev,
-        landingServices: prev.landingServices.map((s) =>
-          s.key === selectedService.key ? { ...s, ...patch } : s,
-        ),
+        landingServices: prev.landingServices.map((s) => {
+          if (s.key !== svcKey) return s;
+          const portfolioCards = s.portfolioCards.map((card, i) =>
+            i === cardIndex ? { ...card, ...patch } : card,
+          );
+          return { ...s, portfolioCards };
+        }),
       }));
     },
-    [selectedService],
+    [svcKey],
+  );
+
+  const onAddServicePortfolioCard = useCallback(() => {
+    if (!svcKey) return;
+    setDraft((prev) => ({
+      ...prev,
+      landingServices: prev.landingServices.map((s) => {
+        if (s.key !== svcKey) return s;
+        return {
+          ...s,
+          portfolioCards: [
+            ...s.portfolioCards,
+            {
+              title: t("admin.newCardDefaultTitle"),
+              description: "",
+              href: "#",
+            },
+          ],
+        };
+      }),
+    }));
+  }, [svcKey, t]);
+
+  const onRemoveServicePortfolioCard = useCallback(
+    (cardIndex) => {
+      if (!svcKey) return;
+      setDraft((prev) => ({
+        ...prev,
+        landingServices: prev.landingServices.map((s) => {
+          if (s.key !== svcKey) return s;
+          return {
+            ...s,
+            portfolioCards: s.portfolioCards.filter((_, i) => i !== cardIndex),
+          };
+        }),
+      }));
+    },
+    [svcKey],
   );
 
   const handleSave = async () => {
@@ -215,12 +261,16 @@ export default function AdminEditor({ onLogout }) {
         typeof parsed === "object" &&
         Array.isArray(parsed.cases)
       ) {
-        const cases = migrateCasesPayload(parsed.cases);
-        if (!cases) {
+        const casesRaw = migrateCasesPayload(parsed.cases);
+        if (!casesRaw) {
           showStatus(t("admin.status.importInvalid"));
           return;
         }
-        const landing = migrateLandingServicesPayload(parsed.landingServices);
+        const landing = migrateLandingServicesPayload(
+          parsed.landingServices,
+          casesRaw,
+        );
+        const cases = stripLegacyServiceCases(casesRaw);
         setDraft((prev) => ({
           cases,
           landingServices: landing ?? prev.landingServices,
@@ -335,17 +385,28 @@ export default function AdminEditor({ onLogout }) {
               >
                 {draft.landingServices.map((s) => (
                   <option key={s.key} value={s.key}>
-                    {s.key}
+                    {t(`services.items.${s.key}.title`)} ({s.key})
                   </option>
                 ))}
               </select>
             </div>
 
-            <AdminLandingServicesEditor
-              serviceItem={selectedService}
-              casesForSelect={draft.cases}
-              onChange={onChangeLandingService}
-            />
+            {selectedService ? (
+              <>
+                <AdminLandingServicesEditor serviceItem={selectedService} />
+
+                <AdminPortfolioCardsSection
+                  listKey={`svc-${selectedService.key}`}
+                  cards={selectedService.portfolioCards ?? []}
+                  idPrefix={`svc-${selectedService.key}`}
+                  fallbackImage="/imgs/case/1.png"
+                  pathHint={`/services/${selectedService.key}`}
+                  onChangeCard={onChangeServicePortfolioCard}
+                  onAddCard={onAddServicePortfolioCard}
+                  onRemoveCard={onRemoveServicePortfolioCard}
+                />
+              </>
+            ) : null}
           </>
         )}
 

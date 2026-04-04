@@ -35,7 +35,7 @@ export default function Hero() {
     <section
       id="about"
       className="relative mb-[26px] flex
-      min-h-[calc(100vh-411px)]
+      min-h-[calc(100vh-211px)]
       sm:min-h-[calc(100vh-111px)] w-full sm:w-[calc(100%-50px)] justify-center overflow-hidden rounded-b-[24px] border-t-0 bg-[--color-hero-background]"
       style={{
         boxShadow: "inset 0 0 0 1px #1E1E20, inset 0 -1px 0 0 #1E1E20",

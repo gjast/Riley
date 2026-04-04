@@ -6,6 +6,7 @@ import {
 } from "react-router-dom";
 import Landing from "../pages/Landing/Landing";
 import Portfolio from "../pages/Portfolio/Portfolio";
+import ServicePortfolio from "../pages/Portfolio/ServicePortfolio";
 import Admin from "../pages/Admin/Admin";
 
 /**
@@ -30,6 +31,7 @@ const router = createBrowserRouter([
     children: [
       { path: "/", element: <Landing /> },
       { path: "/portfolio/:caseId", element: <Portfolio /> },
+      { path: "/services/:serviceKey", element: <ServicePortfolio /> },
       { path: "/admin", element: <Admin /> },
     ],
   },

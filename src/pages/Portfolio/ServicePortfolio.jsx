@@ -7,27 +7,24 @@ const MotionBlock = motion.div;
 import Footer from "../Landing/blocks/Footer";
 import Header from "./blocks/Header";
 import Cart from "./blocks/Cart";
-import { getCaseById, LANDING_SERVICE_KEYS } from "../../data/cases";
+import { CASE_PREVIEW_IMG } from "../../data/cases";
+import { useLandingServiceByKey } from "../../data/useLandingServiceByKey";
 
 const easeSlide = [0.22, 1, 0.36, 1];
 const easeFade = [0.4, 0, 0.2, 1];
 
-export default function Portfolio() {
-  const { caseId } = useParams();
+/** Портфолио плитки «Услуги»: карточки из landingServices, не из кейсов. */
+export default function ServicePortfolio() {
+  const { serviceKey } = useParams();
+  const service = useLandingServiceByKey(serviceKey);
   const reducedMotion = useReducedMotion();
 
-  const legacyKey = /^service-(.+)$/.exec(caseId || "")?.[1];
-  if (legacyKey && LANDING_SERVICE_KEYS.includes(legacyKey)) {
-    return <Navigate to={`/services/${legacyKey}`} replace />;
-  }
-
-  const caseData = caseId ? getCaseById(caseId) : null;
-
-  if (!caseData) {
+  if (!service) {
     return <Navigate to="/" replace />;
   }
 
-  const { img, cards } = caseData;
+  const cards = service.portfolioCards ?? [];
+  const fallbackImg = CASE_PREVIEW_IMG;
 
   return (
     <MotionPage
@@ -44,7 +41,7 @@ export default function Portfolio() {
       <main className="my-[32px] flex w-[calc(100%-2rem)] max-w-[986px] flex-col items-center justify-center gap-[64px] sm:w-[calc(100%-3rem)] lg:w-[calc(100%-100px)]">
         {cards.map((card, index) => (
           <MotionBlock
-            key={`${caseId}-${index}`}
+            key={`${serviceKey}-${index}`}
             className="w-full"
             initial={reducedMotion ? false : { opacity: 0, y: 80 }}
             whileInView={reducedMotion ? undefined : { opacity: 1, y: 0 }}
@@ -64,7 +61,7 @@ export default function Portfolio() {
             }
           >
             <Cart
-              img={card.img ?? img}
+              img={card.img ?? fallbackImg}
               title={card.title}
               description={card.description}
               href={card.href}

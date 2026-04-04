@@ -51,15 +51,17 @@ function normalizeCase(c) {
 }
 
 function normalizeLandingItem(s) {
-  return {
-    key: String(s?.key ?? ""),
-    title: String(s?.title ?? ""),
-    price: String(s?.price ?? ""),
-    img: String(s?.img ?? ""),
-    portfolioCaseId: String(s?.portfolioCaseId ?? ""),
-    position: String(s?.position ?? "justify-end items-end"),
-    positionImg: String(s?.positionImg ?? "h-full"),
-  };
+  const key = String(s?.key ?? "");
+  const portfolioCards = Array.isArray(s?.portfolioCards)
+    ? s.portfolioCards.map(normalizeCard)
+    : [];
+  const legacyCaseId = String(s?.portfolioCaseId ?? "").trim();
+  return { key, portfolioCards, portfolioCaseId: legacyCaseId };
+}
+
+/** Убираем старые псевдо-кейсы service-* (карточки перенесены в landingServices). */
+export function stripLegacyServiceCases(cases) {
+  return cases.filter((c) => !/^service-/.test(String(c?.id ?? "")));
 }
 
 export function migrateCasesPayload(parsed) {
@@ -68,8 +70,11 @@ export function migrateCasesPayload(parsed) {
   return normalized.length ? normalized : null;
 }
 
-/** Сливает сохранённые услуги с дефолтным порядком и ключами. */
-export function migrateLandingServicesPayload(parsed) {
+/**
+ * Сливает landingServices с дефолтами. legacyCases — сырой массив кейсов из того же JSON
+ * (до strip), чтобы один раз перенести карточки со старого portfolioCaseId.
+ */
+export function migrateLandingServicesPayload(parsed, legacyCases = null) {
   if (!Array.isArray(parsed)) return null;
   const byKey = new Map(
     parsed.map((s) => {
@@ -77,10 +82,34 @@ export function migrateLandingServicesPayload(parsed) {
       return n.key ? [n.key, n] : null;
     }).filter(Boolean),
   );
-  const merged = DEFAULT_LANDING_SERVICES.map((def) => ({
-    ...normalizeLandingItem(def),
-    ...byKey.get(def.key),
-  }));
+  const merged = DEFAULT_LANDING_SERVICES.map((def) => {
+    const saved = byKey.get(def.key);
+    let portfolioCards = saved?.portfolioCards?.length
+      ? saved.portfolioCards.map(normalizeCard)
+      : [];
+
+    if (
+      !portfolioCards.length &&
+      saved?.portfolioCaseId &&
+      Array.isArray(legacyCases)
+    ) {
+      const linked = legacyCases.find(
+        (c) => String(c?.id ?? "") === saved.portfolioCaseId,
+      );
+      if (linked?.cards?.length) {
+        portfolioCards = linked.cards.map(normalizeCard);
+      }
+    }
+
+    if (!portfolioCards.length) {
+      portfolioCards = def.portfolioCards.map(normalizeCard);
+    }
+
+    return {
+      key: def.key,
+      portfolioCards,
+    };
+  });
   return merged;
 }
 
@@ -89,17 +118,19 @@ function normalizeApiPayload(stored) {
     return getDefaultsPayload();
   }
   if (Array.isArray(stored)) {
-    const cases = migrateCasesPayload(stored) ?? cloneCases(DEFAULT_CASES);
+    const raw = migrateCasesPayload(stored) ?? cloneCases(DEFAULT_CASES);
+    const cases = stripLegacyServiceCases(raw);
     return {
       cases,
       landingServices: cloneLanding(DEFAULT_LANDING_SERVICES),
     };
   }
-  const cases =
+  const rawCases =
     migrateCasesPayload(stored.cases) ?? cloneCases(DEFAULT_CASES);
   const landingServices =
-    migrateLandingServicesPayload(stored.landingServices) ??
+    migrateLandingServicesPayload(stored.landingServices, rawCases) ??
     cloneLanding(DEFAULT_LANDING_SERVICES);
+  const cases = stripLegacyServiceCases(rawCases);
   return { cases, landingServices };
 }
 
@@ -108,7 +139,6 @@ export function getCases() {
   return cloneCases(p.cases);
 }
 
-/** Кейсы только для сетки Cases на главной. */
 export function getCasesForLandingGrid() {
   return getCases().filter((c) => !c.excludeFromCasesGrid);
 }
@@ -116,6 +146,11 @@ export function getCasesForLandingGrid() {
 export function getLandingServices() {
   const p = memoryPayload ?? getDefaultsPayload();
   return cloneLanding(p.landingServices);
+}
+
+export function getLandingServiceByKey(key) {
+  const p = memoryPayload ?? getDefaultsPayload();
+  return p.landingServices.find((s) => s.key === key) ?? null;
 }
 
 export function getCaseById(id) {
@@ -134,16 +169,14 @@ export async function hydrateCasesFromServer() {
   notifyListeners();
 }
 
-/**
- * Сохранение на сервер: объект { cases, landingServices } или устаревший массив кейсов.
- */
 export async function saveCasesRemote(payload, token) {
   let body;
   if (Array.isArray(payload)) {
-    const cases = migrateCasesPayload(payload);
-    if (!cases) {
+    const raw = migrateCasesPayload(payload);
+    if (!raw) {
       return { ok: false, status: 0, error: "Invalid cases payload" };
     }
+    const cases = stripLegacyServiceCases(raw);
     body = {
       cases,
       landingServices: memoryPayload?.landingServices
@@ -151,13 +184,18 @@ export async function saveCasesRemote(payload, token) {
         : cloneLanding(DEFAULT_LANDING_SERVICES),
     };
   } else {
-    const cases = migrateCasesPayload(payload?.cases);
-    const landingServices = migrateLandingServicesPayload(
-      payload?.landingServices,
-    );
-    if (!cases || !landingServices) {
+    const rawCases = migrateCasesPayload(payload?.cases);
+    if (!rawCases) {
       return { ok: false, status: 0, error: "Invalid payload" };
     }
+    const landingServices = migrateLandingServicesPayload(
+      payload?.landingServices,
+      rawCases,
+    );
+    if (!landingServices) {
+      return { ok: false, status: 0, error: "Invalid payload" };
+    }
+    const cases = stripLegacyServiceCases(rawCases);
     body = { cases, landingServices };
   }
 
