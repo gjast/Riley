@@ -12,7 +12,7 @@ export default function Cart({ img, title, description, href }) {
           background: `linear-gradient(var(--color-line-background), var(--color-line-background)) padding-box, linear-gradient(180deg, #1E1E20 0%, #101012 50%, #1E1E20 100%) border-box`,
         }}
       >
-        <img className="block w-full" src={img} alt={title} />
+        <img className="block w-full aspect-square" src={img} alt={title} />
       </div>
 
       <div className="flex flex-col sm:px-[64px] px-[24px] pb-[24px]">
