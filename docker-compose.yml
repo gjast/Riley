@@ -4,11 +4,11 @@
 #   PORT — порт Node внутри контейнера (по умолчанию 8787).
 #   На хост публикуется: PUBLISH_PORT, если задан, иначе API_PORT из .env, иначе 8787.
 #
-# «bind: address already in use» на 0.0.0.0:4000 — на Mac уже слушает этот порт
-# (часто второй терминал с npm run dev, старый контейнер или другой сервис):
-#   1) Остановите локальный API / Vite или: docker compose down
-#   2) Либо один раз без правки .env:  PUBLISH_PORT=4001 docker compose up --build
-#      (тогда API с хоста: http://127.0.0.1:4001; в .env для Vite укажите API_PORT=4001 только если проксируете на этот контейнер)
+# «bind: address already in use» на 0.0.0.0:4000 — порт на хосте занят
+# (часто npm run dev). Решения:
+#   • npm run docker:api — если 4000 занят, сам выставит PUBLISH_PORT=4001
+#   • вручную: PUBLISH_PORT=4001 docker compose up --build
+#   • или остановите процесс на 4000; «сырой» compose: npm run docker:api:raw
 
 services:
   api:
