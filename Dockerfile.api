@@ -10,7 +10,6 @@ RUN npm init -y >/dev/null 2>&1 \
 
 COPY server/index.mjs ./server/index.mjs
 COPY server/casesDb.mjs ./server/casesDb.mjs
-COPY src/data/casesDefaults.js ./src/data/casesDefaults.js
 
 RUN mkdir -p server/data
 

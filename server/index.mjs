@@ -1,15 +1,12 @@
-import http from "node:http";
-import { createReadStream, createWriteStream } from "node:fs";
+import { createWriteStream } from "node:fs";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { pipeline } from "node:stream/promises";
 import { fileURLToPath } from "node:url";
 import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import busboy from "busboy";
-import {
-  DEFAULT_CASES,
-  DEFAULT_LANDING_SERVICES,
-} from "../src/data/casesDefaults.js";
+import cors from "cors";
+import express from "express";
 import { createCasesStore } from "./casesDb.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -26,9 +23,14 @@ const ALLOWED_IMAGE_MIME = new Set([
 
 const UPLOAD_FILENAME_RE = /^[a-f0-9]{32}\.(jpg|png|webp|gif|svg)$/;
 
-/** Любой URL с нашим путём /api/uploads/<hex>.<ext> (относительный или с доменом). */
 const UPLOAD_URL_FILE_RE =
   /\/api\/uploads\/([a-f0-9]{32}\.(?:jpg|png|webp|gif|svg))(?:\?|#|$)/i;
+
+const JSON_NO_CACHE = {
+  "Cache-Control": "no-store, no-cache, must-revalidate",
+  Pragma: "no-cache",
+  Expires: "0",
+};
 
 function extFromMime(mime) {
   const m = {
@@ -54,11 +56,6 @@ function mimeFromUploadName(filename) {
   return map[ext] || "application/octet-stream";
 }
 
-/**
- * Применяет строку KEY=VAL из .env.
- * Всегда записывает в process.env (последний прочитанный файл побеждает), иначе
- * пустые BOT_TOKEN/TG_ID из окружения IDE/shell/Docker перекрывают реальные значения из файла.
- */
 function applyEnvLine(t) {
   if (!t || t.startsWith("#")) return;
   let line = t;
@@ -133,7 +130,6 @@ if (!process.env.ADMIN_PASSWORD?.trim()) {
   );
 }
 
-/** Stateless admin JWT-like token: не теряется при рестарте процесса / другом инстансе (Docker). */
 function adminSessionSecret() {
   const extra = process.env.ADMIN_SESSION_SECRET?.trim();
   if (extra) return extra;
@@ -192,33 +188,6 @@ function validateToken(authHeader) {
   }
 }
 
-function readBody(req) {
-  return new Promise((resolve, reject) => {
-    const chunks = [];
-    req.on("data", (c) => chunks.push(c));
-    req.on("end", () => resolve(Buffer.concat(chunks).toString("utf8")));
-    req.on("error", reject);
-  });
-}
-
-function readBodyLimited(req, maxBytes) {
-  return new Promise((resolve, reject) => {
-    const chunks = [];
-    let total = 0;
-    req.on("data", (c) => {
-      total += c.length;
-      if (total > maxBytes) {
-        req.destroy();
-        reject(new Error("Body too large"));
-        return;
-      }
-      chunks.push(c);
-    });
-    req.on("end", () => resolve(Buffer.concat(chunks).toString("utf8")));
-    req.on("error", reject);
-  });
-}
-
 function telegramConfig() {
   const token = (
     process.env.TELEGRAM_BOT_TOKEN ||
@@ -233,7 +202,6 @@ function telegramConfig() {
   return { token, chatId };
 }
 
-/** Telegram ждёт chat_id числом (в т.ч. отрицательным для групп). */
 function parseTelegramChatId(raw) {
   const s = String(raw ?? "").trim();
   if (/^-?\d+$/.test(s)) return Number(s);
@@ -252,7 +220,6 @@ function escapeHtml(s) {
     .replace(/>/g, "&gt;");
 }
 
-/** Первое значение заголовка (Node иногда отдаёт string | string[]). */
 function headerFirst(req, name) {
   const v = req.headers[name];
   if (v == null) return "";
@@ -260,10 +227,6 @@ function headerFirst(req, name) {
   return String(v).trim();
 }
 
-/**
- * IP клиента: Cloudflare / прокси / прямое подключение.
- * Порядок: CF-Connecting-IP → True-Client-IP → X-Forwarded-For (первый) → X-Real-IP → socket.
- */
 function getClientIp(req) {
   const cf = headerFirst(req, "cf-connecting-ip");
   if (cf) return normalizeClientIp(cf);
@@ -306,7 +269,7 @@ async function sendTelegramStartForm(body, clientIp) {
   const ipLine =
     clientIp && clientIp.trim()
       ? `IP: <code>${escapeHtml(clientIp.trim())}</code>`
-      : "IP: не определён — обновите API (server/index.mjs) на сервере и перезапустите Node; за прокси нужны X-Forwarded-For / X-Real-IP.";
+      : "IP: не определён — за прокси нужны X-Forwarded-For / X-Real-IP.";
 
   const text = [
     "",
@@ -362,21 +325,6 @@ async function sendTelegramStartForm(body, clientIp) {
   return { ok: true, status: 200 };
 }
 
-function sendJson(res, status, obj) {
-  const body = JSON.stringify(obj);
-  res.writeHead(status, {
-    "Content-Type": "application/json; charset=utf-8",
-    "Content-Length": Buffer.byteLength(body),
-  });
-  res.end(body);
-}
-
-function cors(res) {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
-  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-}
-
 async function ensureDataDir() {
   await fs.mkdir(DATA_DIR, { recursive: true });
 }
@@ -387,13 +335,11 @@ async function ensureUploadDir() {
 
 function handleAdminUpload(req, res) {
   if (!validateToken(req.headers.authorization)) {
-    sendJson(res, 403, { error: "Unauthorized" });
-    return Promise.resolve();
+    return res.status(403).json({ error: "Unauthorized" });
   }
   const ct = req.headers["content-type"] || "";
   if (!ct.toLowerCase().includes("multipart/form-data")) {
-    sendJson(res, 400, { error: "Expected multipart/form-data" });
-    return Promise.resolve();
+    return res.status(400).json({ error: "Expected multipart/form-data" });
   }
 
   return ensureUploadDir().then(
@@ -406,14 +352,12 @@ function handleAdminUpload(req, res) {
         let responded = false;
         let sawFile = false;
 
-        const done = () => {
-          resolve();
-        };
+        const done = () => resolve();
 
         function respond(status, obj) {
           if (responded) return;
           responded = true;
-          sendJson(res, status, obj);
+          res.status(status).json(obj);
           done();
         }
 
@@ -455,7 +399,6 @@ function handleAdminUpload(req, res) {
           respond(400, { error: "Malformed multipart" });
         });
 
-        // Не вызывать done(), пока файл ещё пишется: иначе Promise завершится без ответа → прокси 502.
         bb.on("finish", () => {
           if (!responded && !sawFile) {
             respond(400, { error: "No file" });
@@ -469,35 +412,6 @@ function handleAdminUpload(req, res) {
         req.pipe(bb);
       }),
   );
-}
-
-async function serveUploadFile(req, res, filename) {
-  if (!UPLOAD_FILENAME_RE.test(filename)) {
-    res.writeHead(404);
-    res.end();
-    return;
-  }
-  const fp = path.join(UPLOAD_DIR, filename);
-  const resolved = path.resolve(fp);
-  const rootResolved = path.resolve(UPLOAD_DIR);
-  if (!resolved.startsWith(rootResolved)) {
-    res.writeHead(404);
-    res.end();
-    return;
-  }
-  try {
-    await fs.stat(resolved);
-  } catch {
-    res.writeHead(404);
-    res.end();
-    return;
-  }
-  res.writeHead(200, {
-    "Content-Type": mimeFromUploadName(filename),
-    // Имена файлов — случайный hex; после загрузки не меняются → долгий кэш.
-    "Cache-Control": "public, max-age=31536000, immutable",
-  });
-  createReadStream(resolved).pipe(res);
 }
 
 await ensureDataDir();
@@ -539,7 +453,6 @@ function landingServicesHasDataUrlImages(landing) {
   return false;
 }
 
-/** Имена файлов в uploads/, на которые есть ссылки в сохранённом payload. */
 function collectReferencedUploadFilenames(payload) {
   const names = new Set();
   const scan = (u) => {
@@ -566,7 +479,6 @@ function collectReferencedUploadFilenames(payload) {
   return names;
 }
 
-/** Удаляет файлы из uploads/, которых нет в сохранённых ссылках (замена картинки в админке). */
 async function pruneOrphanUploads(savedPayload) {
   await ensureUploadDir();
   const referenced = collectReferencedUploadFilenames(savedPayload);
@@ -591,185 +503,212 @@ async function pruneOrphanUploads(savedPayload) {
   }
 }
 
-function requestPathname(req) {
-  let p = req.url?.split("?")[0] || "";
-  if (p.length > 1 && p.endsWith("/")) {
-    p = p.replace(/\/+$/, "");
-  }
-  return p;
-}
+const app = express();
+app.set("trust proxy", true);
+app.use(
+  cors({
+    origin: "*",
+    methods: ["GET", "POST", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  }),
+);
 
-const server = http.createServer(async (req, res) => {
-  cors(res);
-  const url = requestPathname(req);
+const jsonSmall = express.json({ limit: "64kb" });
+const jsonLarge = express.json({ limit: "50mb" });
 
-  if (req.method === "OPTIONS") {
-    res.writeHead(204);
-    return res.end();
-  }
-
+app.post("/api/start", jsonSmall, async (req, res, next) => {
   try {
-    if (url === "/api/start" && req.method === "POST") {
-      let raw;
-      try {
-        raw = await readBodyLimited(req, 64 * 1024);
-      } catch {
-        return sendJson(res, 413, { error: "Payload too large" });
-      }
-      let body;
-      try {
-        body = JSON.parse(raw || "{}");
-      } catch {
-        return sendJson(res, 400, { error: "Invalid JSON" });
-      }
-      const result = await sendTelegramStartForm(body, getClientIp(req));
-      if (!result.ok) {
-        const payload = { error: result.error };
-        if (result.detail) payload.detail = result.detail;
-        return sendJson(res, result.status, payload);
-      }
-      return sendJson(res, 200, { ok: true });
+    const result = await sendTelegramStartForm(req.body ?? {}, getClientIp(req));
+    if (!result.ok) {
+      const payload = { error: result.error };
+      if (result.detail) payload.detail = result.detail;
+      return res.status(result.status).json(payload);
     }
+    return res.json({ ok: true });
+  } catch (e) {
+    next(e);
+  }
+});
 
-    if (url === "/api/cases" && req.method === "GET") {
-      const stored = await readCasesFile();
-      let payload;
-      if (!stored) {
-        payload = { cases: [], landingServices: [] };
-      } else if (Array.isArray(stored)) {
-        payload = { cases: stored, landingServices: [] };
-      } else {
-        payload = {
-          cases: Array.isArray(stored.cases) ? stored.cases : [],
-          landingServices: Array.isArray(stored.landingServices)
-            ? stored.landingServices
-            : [],
-        };
-      }
-      return sendJson(res, 200, payload);
+app.get("/api/cases", async (req, res, next) => {
+  try {
+    const stored = await readCasesFile();
+    let payload;
+    if (!stored) {
+      payload = { cases: [], landingServices: [] };
+    } else if (Array.isArray(stored)) {
+      payload = { cases: stored, landingServices: [] };
+    } else {
+      payload = {
+        cases: Array.isArray(stored.cases) ? stored.cases : [],
+        landingServices: Array.isArray(stored.landingServices)
+          ? stored.landingServices
+          : [],
+      };
     }
+    res.set(JSON_NO_CACHE);
+    return res.json(payload);
+  } catch (e) {
+    next(e);
+  }
+});
 
-    if (url.startsWith("/api/uploads/") && req.method === "GET") {
-      const name = decodeURIComponent(url.slice("/api/uploads/".length));
-      await serveUploadFile(req, res, name);
-      return;
+app.get("/api/uploads/:filename", async (req, res, next) => {
+  try {
+    const filename = decodeURIComponent(req.params.filename);
+    if (!UPLOAD_FILENAME_RE.test(filename)) {
+      return res.status(404).end();
     }
-
-    if (url === "/api/admin/upload" && req.method === "POST") {
-      await handleAdminUpload(req, res);
-      return;
+    const fp = path.join(UPLOAD_DIR, filename);
+    const resolved = path.resolve(fp);
+    const rootResolved = path.resolve(UPLOAD_DIR);
+    if (!resolved.startsWith(rootResolved)) {
+      return res.status(404).end();
     }
-
-    if (url === "/api/admin/login" && req.method === "POST") {
-      const pwd = process.env.ADMIN_PASSWORD?.trim();
-      if (!pwd) {
-        return sendJson(res, 503, {
-          error:
-            "Server misconfigured: set ADMIN_PASSWORD in the project root .env (or pass it in Docker environment) and restart the API.",
-        });
-      }
-      const raw = await readBody(req);
-      let body;
-      try {
-        body = JSON.parse(raw || "{}");
-      } catch {
-        return sendJson(res, 400, { error: "Invalid JSON" });
-      }
-      if (body.password !== pwd) {
-        return sendJson(res, 401, { error: "Invalid password" });
-      }
-      const token = mintAdminToken();
-      if (!token) {
-        return sendJson(res, 503, {
-          error:
-            "Server misconfigured: set ADMIN_PASSWORD (or ADMIN_SESSION_SECRET) and restart.",
-        });
-      }
-      return sendJson(res, 200, { token });
+    try {
+      await fs.stat(resolved);
+    } catch {
+      return res.status(404).end();
     }
+    res.setHeader("Content-Type", mimeFromUploadName(filename));
+    res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+    return res.sendFile(resolved);
+  } catch (e) {
+    next(e);
+  }
+});
 
-    if (url === "/api/cases" && req.method === "POST") {
-      if (!validateToken(req.headers.authorization)) {
-        return sendJson(res, 403, { error: "Unauthorized" });
-      }
-      const raw = await readBody(req);
-      let data;
-      try {
-        data = JSON.parse(raw || "null");
-      } catch {
-        return sendJson(res, 400, { error: "Invalid JSON" });
-      }
-      if (Array.isArray(data)) {
-        if (casesArrayHasDataUrlImages(data)) {
-          return sendJson(res, 400, {
-            error: "data_url_images_not_allowed",
-            detail:
-              "Replace data:image/… with uploaded files (/api/uploads/…) or HTTP URLs.",
-          });
-        }
-        const existing = await readCasesFile();
-        let landing = DEFAULT_LANDING_SERVICES;
-        if (
-          existing &&
-          typeof existing === "object" &&
-          !Array.isArray(existing) &&
-          Array.isArray(existing.landingServices)
-        ) {
-          landing = existing.landingServices;
-        }
-        if (landingServicesHasDataUrlImages(landing)) {
-          return sendJson(res, 400, {
-            error: "data_url_images_not_allowed",
-            detail:
-              "Replace data:image/… in landing service cards with /api/uploads/… URLs.",
-          });
-        }
-        const saved = { cases: data, landingServices: landing };
-        await writeCasesFile(saved);
-        await pruneOrphanUploads(saved);
-        return sendJson(res, 200, { ok: true });
-      }
-      if (!data || typeof data !== "object") {
-        return sendJson(res, 400, { error: "Invalid JSON body" });
-      }
-      if (!Array.isArray(data.cases)) {
-        return sendJson(res, 400, {
-          error:
-            "Body must be a cases array (legacy) or { cases, landingServices }",
-        });
-      }
-      const landing = Array.isArray(data.landingServices)
-        ? data.landingServices
-        : DEFAULT_LANDING_SERVICES;
-      if (casesArrayHasDataUrlImages(data.cases)) {
-        return sendJson(res, 400, {
+app.post("/api/admin/upload", (req, res, next) => {
+  handleAdminUpload(req, res).catch(next);
+});
+
+app.post("/api/admin/login", express.json(), async (req, res, next) => {
+  try {
+    const pwd = process.env.ADMIN_PASSWORD?.trim();
+    if (!pwd) {
+      return res.status(503).json({
+        error:
+          "Server misconfigured: set ADMIN_PASSWORD in the project root .env (or pass it in Docker environment) and restart the API.",
+      });
+    }
+    const body = req.body ?? {};
+    if (body.password !== pwd) {
+      return res.status(401).json({ error: "Invalid password" });
+    }
+    const token = mintAdminToken();
+    if (!token) {
+      return res.status(503).json({
+        error:
+          "Server misconfigured: set ADMIN_PASSWORD (or ADMIN_SESSION_SECRET) and restart.",
+      });
+    }
+    return res.json({ token });
+  } catch (e) {
+    next(e);
+  }
+});
+
+app.post("/api/cases", jsonLarge, async (req, res, next) => {
+  try {
+    if (!validateToken(req.headers.authorization)) {
+      return res.status(403).json({ error: "Unauthorized" });
+    }
+    const data = req.body;
+    if (Array.isArray(data)) {
+      if (casesArrayHasDataUrlImages(data)) {
+        return res.status(400).json({
           error: "data_url_images_not_allowed",
           detail:
             "Replace data:image/… with uploaded files (/api/uploads/…) or HTTP URLs.",
         });
       }
+      const existing = await readCasesFile();
+      let landing = [];
+      if (
+        existing &&
+        typeof existing === "object" &&
+        !Array.isArray(existing) &&
+        Array.isArray(existing.landingServices)
+      ) {
+        landing = existing.landingServices;
+      }
       if (landingServicesHasDataUrlImages(landing)) {
-        return sendJson(res, 400, {
+        return res.status(400).json({
           error: "data_url_images_not_allowed",
           detail:
             "Replace data:image/… in landing service cards with /api/uploads/… URLs.",
         });
       }
-      const saved = {
-        cases: data.cases,
-        landingServices: landing,
-      };
+      const saved = { cases: data, landingServices: landing };
       await writeCasesFile(saved);
       await pruneOrphanUploads(saved);
-      return sendJson(res, 200, { ok: true });
+      return res.json({ ok: true });
     }
-
-    res.writeHead(404);
-    res.end();
+    if (!data || typeof data !== "object") {
+      return res.status(400).json({ error: "Invalid JSON body" });
+    }
+    if (!Array.isArray(data.cases)) {
+      return res.status(400).json({
+        error:
+          "Body must be a cases array (legacy) or { cases, landingServices }",
+      });
+    }
+    const landing = Array.isArray(data.landingServices)
+      ? data.landingServices
+      : [];
+    if (casesArrayHasDataUrlImages(data.cases)) {
+      return res.status(400).json({
+        error: "data_url_images_not_allowed",
+        detail:
+          "Replace data:image/… with uploaded files (/api/uploads/…) or HTTP URLs.",
+      });
+    }
+    if (landingServicesHasDataUrlImages(landing)) {
+      return res.status(400).json({
+        error: "data_url_images_not_allowed",
+        detail:
+          "Replace data:image/… in landing service cards with /api/uploads/… URLs.",
+      });
+    }
+    const saved = {
+      cases: data.cases,
+      landingServices: landing,
+    };
+    await writeCasesFile(saved);
+    await pruneOrphanUploads(saved);
+    return res.json({ ok: true });
   } catch (e) {
-    console.error(e);
-    sendJson(res, 500, { error: "Server error" });
+    next(e);
   }
+});
+
+app.use((req, res) => {
+  res.status(404).end();
+});
+
+app.use((err, req, res, next) => {
+  if (err instanceof SyntaxError && err.status === 400 && "body" in err) {
+    return res.status(400).json({ error: "Invalid JSON" });
+  }
+  if (err.type === "entity.too.large") {
+    return res.status(413).json({ error: "Payload too large" });
+  }
+  console.error(err);
+  if (res.headersSent) return next(err);
+  return res.status(500).json({ error: "Server error" });
+});
+
+const server = app.listen(PORT, () => {
+  console.log(`[relaylend-server] Express http://127.0.0.1:${PORT}`);
+  console.log(`[relaylend-server] cases DB: ${casesStore.dbPath}`);
+  console.log(`[relaylend-server] uploads dir: ${UPLOAD_DIR}`);
+  console.log(
+    `[relaylend-server] ADMIN_PASSWORD: ${process.env.ADMIN_PASSWORD?.trim() ? "set" : "MISSING (login will return 503)"}`,
+  );
+  const tg = telegramConfig();
+  console.log(
+    `[relaylend-server] Telegram (форма «Начать»): ${tg.token && tg.chatId ? "BOT_TOKEN + TG_ID (или TELEGRAM_*) заданы" : "не настроено — POST /api/start вернёт 503"}`,
+  );
 });
 
 server.on("error", (err) => {
@@ -781,17 +720,4 @@ server.on("error", (err) => {
     process.exit(1);
   }
   throw err;
-});
-
-server.listen(PORT, () => {
-  console.log(`[relaylend-server] http://127.0.0.1:${PORT}`);
-  console.log(`[relaylend-server] cases DB: ${casesStore.dbPath}`);
-  console.log(`[relaylend-server] uploads dir: ${UPLOAD_DIR}`);
-  console.log(
-    `[relaylend-server] ADMIN_PASSWORD: ${process.env.ADMIN_PASSWORD?.trim() ? "set" : "MISSING (login will return 503)"}`,
-  );
-  const tg = telegramConfig();
-  console.log(
-    `[relaylend-server] Telegram (форма «Начать»): ${tg.token && tg.chatId ? "BOT_TOKEN + TG_ID (или TELEGRAM_*) заданы" : "не настроено — POST /api/start вернёт 503"}`,
-  );
 });

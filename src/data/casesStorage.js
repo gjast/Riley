@@ -204,7 +204,7 @@ export function getCaseById(id) {
 
 export async function hydrateCasesFromServer() {
   try {
-    const res = await fetch(apiUrl("/api/cases"));
+    const res = await fetch(apiUrl("/api/cases"), { cache: "no-store" });
     if (!res.ok) throw new Error("cases fetch failed");
     const data = await res.json();
     memoryPayload = normalizeApiPayloadFromServer(data);

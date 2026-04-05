@@ -1,13 +1,15 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   getCases,
+  getCasesHydrated,
   getLandingServices,
   migrateCasesPayload,
   migrateLandingServicesPayload,
   resetCasesRemote,
   saveCasesRemote,
   stripLegacyServiceCases,
+  subscribeCases,
 } from "../../data/cases";
 import { clearAdminToken, getAdminToken } from "../../data/adminSession";
 import AdminHeader from "./blocks/AdminHeader";
@@ -31,10 +33,27 @@ export default function AdminEditor({ onLogout }) {
     () => getCases()[0]?.id ?? "",
   );
   const [selectedServiceKey, setSelectedServiceKey] = useState(
-    () => getLandingServices()[0]?.key ?? "web",
+    () => getLandingServices()[0]?.key ?? "",
   );
   const [statusText, setStatusText] = useState("");
   const importRef = useRef(null);
+  const initialSyncFromServer = useRef(false);
+
+  useEffect(() => {
+    function syncDraftOnceFromServer() {
+      if (!getCasesHydrated() || initialSyncFromServer.current) return;
+      initialSyncFromServer.current = true;
+      const next = {
+        cases: structuredClone(getCases()),
+        landingServices: structuredClone(getLandingServices()),
+      };
+      setDraft(next);
+      setSelectedId(next.cases[0]?.id ?? "");
+      setSelectedServiceKey(next.landingServices[0]?.key ?? "");
+    }
+    syncDraftOnceFromServer();
+    return subscribeCases(syncDraftOnceFromServer);
+  }, []);
 
   const selected =
     draft.cases.find((c) => c.id === selectedId) ?? draft.cases[0] ?? null;
@@ -242,7 +261,7 @@ export default function AdminEditor({ onLogout }) {
       const next = cloneDraft();
       setDraft(next);
       setSelectedId(next.cases[0]?.id ?? "");
-      setSelectedServiceKey(next.landingServices[0]?.key ?? "web");
+      setSelectedServiceKey(next.landingServices[0]?.key ?? "");
       showStatus(t("admin.status.reset"));
     } else if (result.status === 401 || result.status === 403) {
       showStatus(t("admin.status.sessionExpired"));
@@ -290,16 +309,12 @@ export default function AdminEditor({ onLogout }) {
         typeof parsed === "object" &&
         Array.isArray(parsed.cases)
       ) {
-        const casesRaw = migrateCasesPayload(parsed.cases);
-        if (!casesRaw) {
-          showStatus(t("admin.status.importInvalid"));
-          return;
-        }
+        const casesRaw = migrateCasesPayload(parsed.cases) ?? [];
+        const cases = stripLegacyServiceCases(casesRaw);
         const landing = migrateLandingServicesPayload(
           parsed.landingServices,
           casesRaw,
         );
-        const cases = stripLegacyServiceCases(casesRaw);
         setDraft((prev) => ({
           cases,
           landingServices: landing ?? prev.landingServices,
