@@ -38,8 +38,8 @@ export default function Header() {
 				className="relative z-30 flex items-center justify-between gap-3 rounded-2xl px-3 py-2.5 sm:px-4 sm:py-3 lg:px-4"
 				style={{
 					backgroundColor: `rgba(0,0,0,${0.65 * barP})`,
-					backdropFilter: `blur(${96 * barP}px)`,
-					WebkitBackdropFilter: `blur(${96 * barP}px)`,
+					backdropFilter: "blur(96px)",
+					WebkitBackdropFilter: "blur(96px)",
 				}}
 			>
 				<div className="flex min-w-0 items-center gap-2">
