@@ -114,7 +114,7 @@
     "exportJson": "Export JSON",
     "importJson": "Import JSON",
     "pageTitle": "Content editor",
-    "pageIntroServer": "Cases: home grid and /portfolio/:id. Services: home tiles (layout in code) and separate /services/:key pages with their own cards, not tied to cases. Saves to server/data/cases.json.",
+    "pageIntroServer": "Cases: home grid and /portfolio/:id. Services: home tiles (layout in code) and separate /services/:key pages with their own cards, not tied to cases. Data is stored in SQLite (Docker: persistent volume). After «Save to site», old /api/uploads/ files that are no longer referenced are removed.",
     "tabCases": "Cases",
     "tabServices": "Services (landing)",
     "selectCase": "Select case",

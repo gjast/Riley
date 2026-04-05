@@ -10,10 +10,10 @@ import {
   DEFAULT_CASES,
   DEFAULT_LANDING_SERVICES,
 } from "../src/data/casesDefaults.js";
+import { createCasesStore } from "./casesDb.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = path.join(__dirname, "data");
-const DATA_FILE = path.join(DATA_DIR, "cases.json");
 const UPLOAD_DIR = path.join(DATA_DIR, "uploads");
 
 const ALLOWED_IMAGE_MIME = new Set([
@@ -25,6 +25,10 @@ const ALLOWED_IMAGE_MIME = new Set([
 ]);
 
 const UPLOAD_FILENAME_RE = /^[a-f0-9]{32}\.(jpg|png|webp|gif|svg)$/;
+
+/** Любой URL с нашим путём /api/uploads/<hex>.<ext> (относительный или с доменом). */
+const UPLOAD_URL_FILE_RE =
+  /\/api\/uploads\/([a-f0-9]{32}\.(?:jpg|png|webp|gif|svg))(?:\?|#|$)/i;
 
 function extFromMime(mime) {
   const m = {
@@ -496,18 +500,16 @@ async function serveUploadFile(req, res, filename) {
   createReadStream(resolved).pipe(res);
 }
 
+await ensureDataDir();
+const casesStore = createCasesStore(DATA_DIR);
+
 async function readCasesFile() {
-  try {
-    const raw = await fs.readFile(DATA_FILE, "utf8");
-    return JSON.parse(raw);
-  } catch {
-    return null;
-  }
+  return casesStore.read();
 }
 
 async function writeCasesFile(data) {
   await ensureDataDir();
-  await fs.writeFile(DATA_FILE, JSON.stringify(data, null, 2), "utf8");
+  casesStore.write(data);
 }
 
 function imgLooksLikeDataUrl(s) {
@@ -535,6 +537,58 @@ function landingServicesHasDataUrlImages(landing) {
     }
   }
   return false;
+}
+
+/** Имена файлов в uploads/, на которые есть ссылки в сохранённом payload. */
+function collectReferencedUploadFilenames(payload) {
+  const names = new Set();
+  const scan = (u) => {
+    if (typeof u !== "string") return;
+    const m = u.match(UPLOAD_URL_FILE_RE);
+    if (!m) return;
+    const fn = m[1].toLowerCase();
+    if (UPLOAD_FILENAME_RE.test(fn)) names.add(fn);
+  };
+  if (!payload || typeof payload !== "object") return names;
+  if (Array.isArray(payload.cases)) {
+    for (const c of payload.cases) {
+      scan(c?.img);
+      if (Array.isArray(c?.cards))
+        for (const card of c.cards) scan(card?.img);
+    }
+  }
+  if (Array.isArray(payload.landingServices)) {
+    for (const s of payload.landingServices) {
+      if (Array.isArray(s?.portfolioCards))
+        for (const card of s.portfolioCards) scan(card?.img);
+    }
+  }
+  return names;
+}
+
+/** Удаляет файлы из uploads/, которых нет в сохранённых ссылках (замена картинки в админке). */
+async function pruneOrphanUploads(savedPayload) {
+  await ensureUploadDir();
+  const referenced = collectReferencedUploadFilenames(savedPayload);
+  let entries;
+  try {
+    entries = await fs.readdir(UPLOAD_DIR);
+  } catch {
+    return;
+  }
+  for (const fname of entries) {
+    if (!UPLOAD_FILENAME_RE.test(fname)) continue;
+    if (referenced.has(fname.toLowerCase())) continue;
+    try {
+      await fs.unlink(path.join(UPLOAD_DIR, fname));
+      console.log(`[relaylend-server] Removed unused upload: ${fname}`);
+    } catch (e) {
+      console.warn(
+        `[relaylend-server] Could not remove upload ${fname}:`,
+        e?.message || e,
+      );
+    }
+  }
 }
 
 function requestPathname(req) {
@@ -676,7 +730,9 @@ const server = http.createServer(async (req, res) => {
               "Replace data:image/… in landing service cards with /api/uploads/… URLs.",
           });
         }
-        await writeCasesFile({ cases: data, landingServices: landing });
+        const saved = { cases: data, landingServices: landing };
+        await writeCasesFile(saved);
+        await pruneOrphanUploads(saved);
         return sendJson(res, 200, { ok: true });
       }
       if (!data || typeof data !== "object") {
@@ -705,10 +761,12 @@ const server = http.createServer(async (req, res) => {
             "Replace data:image/… in landing service cards with /api/uploads/… URLs.",
         });
       }
-      await writeCasesFile({
+      const saved = {
         cases: data.cases,
         landingServices: landing,
-      });
+      };
+      await writeCasesFile(saved);
+      await pruneOrphanUploads(saved);
       return sendJson(res, 200, { ok: true });
     }
 
@@ -733,7 +791,7 @@ server.on("error", (err) => {
 
 server.listen(PORT, () => {
   console.log(`[relaylend-server] http://127.0.0.1:${PORT}`);
-  console.log(`[relaylend-server] cases file: ${DATA_FILE}`);
+  console.log(`[relaylend-server] cases DB: ${casesStore.dbPath}`);
   console.log(`[relaylend-server] uploads dir: ${UPLOAD_DIR}`);
   console.log(
     `[relaylend-server] ADMIN_PASSWORD: ${process.env.ADMIN_PASSWORD?.trim() ? "set" : "MISSING (login will return 503)"}`,

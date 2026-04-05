@@ -19,8 +19,12 @@ lerna-debug.log*
 # Environment
 
 
-# Server-persisted cases (edit via admin → saved here)
+# Server-persisted cases (admin / Docker volume)
 server/data/cases.json
+server/data/cases.json.migrated.*
+server/data/relaylend.db
+server/data/relaylend.db-shm
+server/data/relaylend.db-wal
 
 # Editor
 .vscode/*

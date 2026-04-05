@@ -29,6 +29,7 @@ services:
       TG_ID: ${TG_ID:-}
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
       TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID:-}
+    # relaylend.db + relaylend.db-wal + uploads/ — не удалять: docker compose down -v сотрёт данные
     volumes:
       - relaylend_cases:/app/server/data
     restart: unless-stopped
