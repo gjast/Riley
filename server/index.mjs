@@ -248,7 +248,42 @@ function escapeHtml(s) {
     .replace(/>/g, "&gt;");
 }
 
-async function sendTelegramStartForm(body) {
+/** Первое значение заголовка (Node иногда отдаёт string | string[]). */
+function headerFirst(req, name) {
+  const v = req.headers[name];
+  if (v == null) return "";
+  if (Array.isArray(v)) return String(v[0] ?? "").trim();
+  return String(v).trim();
+}
+
+/**
+ * IP клиента: Cloudflare / прокси / прямое подключение.
+ * Порядок: CF-Connecting-IP → True-Client-IP → X-Forwarded-For (первый) → X-Real-IP → socket.
+ */
+function getClientIp(req) {
+  const cf = headerFirst(req, "cf-connecting-ip");
+  if (cf) return normalizeClientIp(cf);
+  const trueClient = headerFirst(req, "true-client-ip");
+  if (trueClient) return normalizeClientIp(trueClient);
+  const xff = headerFirst(req, "x-forwarded-for");
+  if (xff) {
+    const first = xff.split(",")[0]?.trim();
+    if (first) return normalizeClientIp(first);
+  }
+  const real = headerFirst(req, "x-real-ip");
+  if (real) return normalizeClientIp(real);
+  const ra = req.socket?.remoteAddress;
+  if (ra) return normalizeClientIp(ra);
+  return "";
+}
+
+function normalizeClientIp(ip) {
+  const s = String(ip).trim();
+  if (s.startsWith("::ffff:")) return s.slice(7);
+  return s;
+}
+
+async function sendTelegramStartForm(body, clientIp) {
   const { token, chatId } = telegramConfig();
   if (!token || !chatId) {
     return { ok: false, status: 503, error: "telegram_not_configured" };
@@ -264,12 +299,18 @@ async function sendTelegramStartForm(body) {
     return { ok: false, status: 400, error: "validation_failed" };
   }
 
+  const ipLine =
+    clientIp && clientIp.trim()
+      ? `IP: <code>${escapeHtml(clientIp.trim())}</code>`
+      : "IP: не определён — обновите API (server/index.mjs) на сервере и перезапустите Node; за прокси нужны X-Forwarded-For / X-Real-IP.";
+
   const text = [
     "",
     `Услуга: ${escapeHtml(service)}`,
     `Бюджет: ${escapeHtml(budget)}`,
     `Срок: ${escapeHtml(deadline)}`,
     `Контакт: <code>${escapeHtml(contact)}</code>`,
+    ipLine,
     "",
     "Комментарий:",
     escapeHtml(comment),
@@ -526,7 +567,7 @@ const server = http.createServer(async (req, res) => {
       } catch {
         return sendJson(res, 400, { error: "Invalid JSON" });
       }
-      const result = await sendTelegramStartForm(body);
+      const result = await sendTelegramStartForm(body, getClientIp(req));
       if (!result.ok) {
         const payload = { error: result.error };
         if (result.detail) payload.detail = result.detail;
