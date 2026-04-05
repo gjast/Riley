@@ -1,22 +1,25 @@
-import { useEffect, useState } from "react";
+import { useLayoutEffect, useState } from "react";
 import {
   getLandingServiceByKey,
   subscribeCases,
 } from "./casesStorage.js";
 
 export function useLandingServiceByKey(key) {
+  const k = key ? String(key) : "";
   const [service, setService] = useState(() =>
-    key ? getLandingServiceByKey(key) : null,
+    k ? getLandingServiceByKey(k) : null,
   );
 
-  useEffect(() => {
-    if (!key) {
-      setService(null);
+  useLayoutEffect(() => {
+    const sync = () => setService(k ? getLandingServiceByKey(k) : null);
+    if (!k) {
+      sync();
       return undefined;
     }
-    setService(getLandingServiceByKey(key));
-    return subscribeCases(() => setService(getLandingServiceByKey(key)));
-  }, [key]);
+    const unsub = subscribeCases(sync);
+    sync();
+    return unsub;
+  }, [k]);
 
   return service;
 }
