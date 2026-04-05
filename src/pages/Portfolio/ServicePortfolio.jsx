@@ -71,7 +71,7 @@ export default function ServicePortfolio() {
         ))}
       </main>
 
-      <Footer />
+      <Footer href="/#process" />
     </MotionPage>
   );
 }

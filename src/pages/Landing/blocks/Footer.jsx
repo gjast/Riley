@@ -1,6 +1,20 @@
+import { useCallback } from "react";
 import { useTranslation } from "react-i18next";
+import { useLocation, useNavigate } from "react-router-dom";
 import CTA from "../../../components/CTA";
 import { useScrollToSection } from "../../../hooks/useScrollToSection";
+
+/** Из `#process`, `/#process` или пути — id секции на главной. */
+function footerSectionId(hrefProp) {
+  const s = String(hrefProp ?? "").trim();
+  if (!s) return "process";
+  const i = s.indexOf("#");
+  if (i !== -1) {
+    const rest = s.slice(i + 1).trim();
+    return rest.replace(/^\/+/, "") || "process";
+  }
+  return s.replace(/^\/+/, "").replace(/\/$/, "").trim() || "process";
+}
 
 /** Порядок: Lolzteam → Exploit → Pinterest → Behance */
 const FOOTER_SOCIAL_LINKS = [
@@ -31,9 +45,21 @@ const FOOTER_SOCIAL_LINKS = [
 	},
 ];
 
-export default function Footer({ href='#process' }) {
+export default function Footer({ href = "#process" }) {
 	const { t } = useTranslation();
+	const location = useLocation();
+	const navigate = useNavigate();
 	const scrollToSection = useScrollToSection();
+
+	const onCta = useCallback(() => {
+		const id = footerSectionId(href);
+		if (location.pathname === "/") {
+			scrollToSection(id);
+			return;
+		}
+		navigate({ pathname: "/", hash: `#${id}` });
+	}, [href, location.pathname, navigate, scrollToSection]);
+
 	return (
 		<div
 			className="relative mx-auto flex w-[calc(100%-2rem)] max-w-[1440px] flex-col justify-between gap-10 overflow-hidden rounded-2xl sm:w-[calc(100%-3rem)] sm:gap-12 md:gap-14 lg:w-[calc(100%-100px)] lg:gap-16"
@@ -67,7 +93,7 @@ export default function Footer({ href='#process' }) {
 				<div className="flex items-center  flex-row gap-3 mx-auto sm:mx-0 rounded-[10px] bg-[#1D1E20] w-max h-[42px] sm:items-center">
 					
 					<div className="flex justify-center sm:justify-start sm:pr-1">
-						<CTA text={t("footer.viewPortfolio")} onClick={() => {scrollToSection(href)}} />
+						<CTA text={t("footer.viewPortfolio")} onClick={onCta} />
 					</div>
 				</div>
 
