@@ -13,6 +13,7 @@ export {
   getLandingServiceByKey,
   getLandingServices,
   hydrateCasesFromServer,
+  mergeLandingServicesWithDefaults,
   migrateCasesPayload,
   migrateLandingServicesPayload,
   resetCasesRemote,

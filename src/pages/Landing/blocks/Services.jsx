@@ -1,18 +1,14 @@
 import { useTranslation } from "react-i18next";
 import Title from "../../../components/Title";
 import Servic from "../../../components/Servic";
-import { LANDING_SERVICE_CARD_LAYOUT } from "../../../data/cases";
-import { useCasesHydrated } from "../../../data/useCasesHydrated";
-import { useLandingServices } from "../../../data/useLandingServices";
+import {
+  LANDING_SERVICE_CARD_LAYOUT,
+  LANDING_SERVICE_KEYS,
+} from "../../../data/cases";
 
+/** Плитки услуг на лендинге фиксированы в коде (раскладка + ключи); не скрываем при пустом API. */
 export default function Services() {
   const { t } = useTranslation();
-  const hydrated = useCasesHydrated();
-  const landingServices = useLandingServices();
-
-  if (!hydrated || landingServices.length === 0) {
-    return null;
-  }
 
   return (
     <section
@@ -22,18 +18,18 @@ export default function Services() {
       <Title title={t("services.title")} description={t("services.description")} />
 
       <div className="grid w-full grid-cols-1 gap-4 sm:gap-4 md:grid-cols-4 md:gap-[16px]">
-        {landingServices.map((item, index) => {
-          const layout = LANDING_SERVICE_CARD_LAYOUT[item.key];
+        {LANDING_SERVICE_KEYS.map((key, index) => {
+          const layout = LANDING_SERVICE_CARD_LAYOUT[key];
           if (!layout) return null;
           return (
-            <div key={item.key} className="min-w-0">
+            <div key={key} className="min-w-0">
               <Servic
-                title={t(`services.items.${item.key}.title`)}
-                price={t(`services.items.${item.key}.price`)}
+                title={t(`services.items.${key}.title`)}
+                price={t(`services.items.${key}.price`)}
                 position={layout.position}
                 img={layout.img}
                 positionImg={layout.positionImg}
-                to={`/services/${item.key}`}
+                to={`/services/${key}`}
                 eagerImage={index < 2}
               />
             </div>

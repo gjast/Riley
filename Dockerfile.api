@@ -6,7 +6,12 @@ FROM node:22-bookworm-slim
 WORKDIR /app
 
 RUN npm init -y >/dev/null 2>&1 \
-  && npm install busboy@1.6.0 better-sqlite3@11.7.0 --omit=dev --no-audit --no-fund
+  && npm install \
+    busboy@1.6.0 \
+    better-sqlite3@11.7.0 \
+    express@4.21.2 \
+    cors@2.8.5 \
+    --omit=dev --no-audit --no-fund
 
 COPY server/index.mjs ./server/index.mjs
 COPY server/casesDb.mjs ./server/casesDb.mjs

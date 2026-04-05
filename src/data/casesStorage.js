@@ -120,6 +120,26 @@ export function migrateLandingServicesPayload(parsed, legacyCases = null) {
   return merged;
 }
 
+/**
+ * Для админки: все услуги с лендинга (фиксированные ключи), portfolioCards с API или из дефолтов.
+ */
+export function mergeLandingServicesWithDefaults(apiList) {
+  const list = Array.isArray(apiList) ? apiList : [];
+  const byKey = new Map();
+  for (const s of list) {
+    const n = normalizeLandingItem(s);
+    if (n.key) byKey.set(n.key, n);
+  }
+  return DEFAULT_LANDING_SERVICES.map((def) => {
+    const saved = byKey.get(def.key);
+    const portfolioCards =
+      saved?.portfolioCards?.length
+        ? saved.portfolioCards.map(normalizeCard)
+        : def.portfolioCards.map(normalizeCard);
+    return { key: def.key, portfolioCards };
+  });
+}
+
 /** Только данные с API, без встроенных DEFAULT_CASES / DEFAULT_LANDING_SERVICES. */
 function normalizeApiPayloadFromServer(data) {
   if (data == null) {

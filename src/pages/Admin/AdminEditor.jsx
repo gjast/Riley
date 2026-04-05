@@ -4,6 +4,7 @@ import {
   getCases,
   getCasesHydrated,
   getLandingServices,
+  mergeLandingServicesWithDefaults,
   migrateCasesPayload,
   migrateLandingServicesPayload,
   resetCasesRemote,
@@ -21,7 +22,9 @@ import AdminPortfolioCardsSection from "./blocks/AdminPortfolioCardsSection";
 function cloneDraft() {
   return {
     cases: structuredClone(getCases()),
-    landingServices: structuredClone(getLandingServices()),
+    landingServices: structuredClone(
+      mergeLandingServicesWithDefaults(getLandingServices()),
+    ),
   };
 }
 
@@ -33,7 +36,8 @@ export default function AdminEditor({ onLogout }) {
     () => getCases()[0]?.id ?? "",
   );
   const [selectedServiceKey, setSelectedServiceKey] = useState(
-    () => getLandingServices()[0]?.key ?? "",
+    () =>
+      mergeLandingServicesWithDefaults(getLandingServices())[0]?.key ?? "",
   );
   const [statusText, setStatusText] = useState("");
   const importRef = useRef(null);
