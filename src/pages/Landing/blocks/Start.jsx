@@ -26,7 +26,7 @@ const START_SERVICE_LAYOUT = [
 	},
 ];
 
-const BUDGET_PRESETS = ["$100", "$250", "$500", "$750", "$1000+"];
+const BUDGET_PRESETS = ["$500", "$850", "$1600", "$2300", "$5000+"];
 
 const DEADLINE_PRESETS = ["7d", "12d", "14d", "21d", "30d"];
 

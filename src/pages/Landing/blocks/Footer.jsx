@@ -31,7 +31,7 @@ const FOOTER_SOCIAL_LINKS = [
 	},
 ];
 
-export default function Footer() {
+export default function Footer({ href='#process' }) {
 	const { t } = useTranslation();
 	const scrollToSection = useScrollToSection();
 	return (
@@ -67,7 +67,7 @@ export default function Footer() {
 				<div className="flex items-center  flex-row gap-3 mx-auto sm:mx-0 rounded-[10px] bg-[#1D1E20] w-max h-[42px] sm:items-center">
 					
 					<div className="flex justify-center sm:justify-start sm:pr-1">
-						<CTA text={t("footer.viewPortfolio")} onClick={() => {scrollToSection("process")}} />
+						<CTA text={t("footer.viewPortfolio")} onClick={() => {scrollToSection(href)}} />
 					</div>
 				</div>
 

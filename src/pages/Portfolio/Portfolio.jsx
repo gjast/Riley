@@ -74,7 +74,7 @@ export default function Portfolio() {
         ))}
       </main>
 
-      <Footer />
+      <Footer href={'/#process'}/>
     </MotionPage>
   );
 }
