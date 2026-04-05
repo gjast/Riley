@@ -1,13 +1,50 @@
-import { useLayoutEffect } from "react";
+/* eslint-disable react-refresh/only-export-components -- маршруты: lazy + createBrowserRouter */
+import { lazy, Suspense, useLayoutEffect } from "react";
 import {
   createBrowserRouter,
   Outlet,
   useLocation,
 } from "react-router-dom";
-import Landing from "../pages/Landing/Landing";
-import Portfolio from "../pages/Portfolio/Portfolio";
-import ServicePortfolio from "../pages/Portfolio/ServicePortfolio";
-import Admin from "../pages/Admin/Admin";
+
+const Landing = lazy(() => import("../pages/Landing/Landing"));
+const Portfolio = lazy(() => import("../pages/Portfolio/Portfolio"));
+const ServicePortfolio = lazy(
+  () => import("../pages/Portfolio/ServicePortfolio"),
+);
+const Admin = lazy(() => import("../pages/Admin/Admin"));
+
+function PageFallback() {
+  return (
+    <div
+      className="flex min-h-screen items-center justify-center bg-(--color-background) text-[15px] text-[#6A6A6D]"
+      role="status"
+      aria-live="polite"
+    >
+      Loading…
+    </div>
+  );
+}
+
+const landingRoute = (
+  <Suspense fallback={<PageFallback />}>
+    <Landing />
+  </Suspense>
+);
+const portfolioRoute = (
+  <Suspense fallback={<PageFallback />}>
+    <Portfolio />
+  </Suspense>
+);
+const servicePortfolioRoute = (
+  <Suspense fallback={<PageFallback />}>
+    <ServicePortfolio />
+  </Suspense>
+);
+const adminRoute = (
+  <Suspense fallback={<PageFallback />}>
+    <Admin />
+  </Suspense>
+);
 
 /**
  * При переходах между страницами SPA окно сохраняет scrollY с предыдущего маршрута.
@@ -29,10 +66,10 @@ const router = createBrowserRouter([
   {
     element: <RootLayout />,
     children: [
-      { path: "/", element: <Landing /> },
-      { path: "/portfolio/:caseId", element: <Portfolio /> },
-      { path: "/services/:serviceKey", element: <ServicePortfolio /> },
-      { path: "/admin", element: <Admin /> },
+      { path: "/", element: landingRoute },
+      { path: "/portfolio/:caseId", element: portfolioRoute },
+      { path: "/services/:serviceKey", element: servicePortfolioRoute },
+      { path: "/admin", element: adminRoute },
     ],
   },
 ]);

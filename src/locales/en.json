@@ -132,6 +132,7 @@
     "newCardDefaultTitle": "New block",
     "status": {
       "savedServer": "Saved on the server. Refresh the site to load the latest cases.",
+      "savedServerStrippedDataUrls": "Saved. Removed inline data:URL images in {{count}} field(s) — upload files again or placeholders will show.",
       "reset": "Reset to built-in defaults on the server.",
       "exported": "JSON downloaded.",
       "importInvalid": "Invalid file: expected a cases array or { cases, landingServices }.",
@@ -145,6 +146,8 @@
     "landingSectionTitle": "Landing — card in Cases grid",
     "preview": "Preview",
     "uploadFile": "Upload file",
+    "uploadFailed": "Could not upload image. Check the server and sign in again.",
+    "noDataUrl": "Data URLs are not allowed. Upload a file or use a server path like /api/uploads/…",
     "title": "Title",
     "imageUrl": "Image URL (or keep after file upload)",
     "portfolioSectionTitle": "Portfolio — blocks on the case page",

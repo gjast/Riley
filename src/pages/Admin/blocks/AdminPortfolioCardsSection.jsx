@@ -1,5 +1,6 @@
 import { useRef } from "react";
 import { useTranslation } from "react-i18next";
+import { uploadAdminImage } from "../../../api/uploadAdminImage";
 
 const panelStyle = {
   border: "1px solid transparent",
@@ -12,15 +13,6 @@ const inputClass =
 const labelClass =
   "mb-1.5 block text-[13px] font-medium tracking-[-0.02em] text-[#8B8B8B]";
 
-function readFileAsDataUrl(file) {
-  return new Promise((resolve, reject) => {
-    const r = new FileReader();
-    r.onload = () => resolve(String(r.result));
-    r.onerror = reject;
-    r.readAsDataURL(file);
-  });
-}
-
 /**
  * Блоки портфолио (как Cart): общий UI для кейса и для услуги.
  */
@@ -30,6 +22,8 @@ export default function AdminPortfolioCardsSection({
   idPrefix,
   fallbackImage,
   pathHint,
+  uploadToken,
+  onUploadError,
   onChangeCard,
   onAddCard,
   onRemoveCard,
@@ -102,8 +96,20 @@ export default function AdminPortfolioCardsSection({
                     const f = e.target.files?.[0];
                     e.target.value = "";
                     if (!f) return;
-                    const url = await readFileAsDataUrl(f);
-                    onChangeCard(i, { img: url });
+                    if (!uploadToken?.trim()) {
+                      onUploadError?.();
+                      return;
+                    }
+                    const r = await uploadAdminImage(f, uploadToken);
+                    if (r.ok) {
+                      onChangeCard(i, { img: r.url });
+                    } else {
+                      onUploadError?.(
+                        r.status === 401 || r.status === 403
+                          ? "unauthorized"
+                          : undefined,
+                      );
+                    }
                   }}
                 />
                 <button
@@ -173,11 +179,16 @@ export default function AdminPortfolioCardsSection({
                     id={`${idPrefix}-card-img-url-${i}`}
                     className={inputClass}
                     value={card.img ?? ""}
-                    onChange={(e) =>
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      if (/^\s*data:/i.test(v)) {
+                        onUploadError?.("noDataUrl");
+                        return;
+                      }
                       onChangeCard(i, {
-                        img: e.target.value.trim() ? e.target.value : undefined,
-                      })
-                    }
+                        img: v.trim() ? v : undefined,
+                      });
+                    }}
                     placeholder={t("admin.placeholderCardImageHint")}
                   />
                 </div>

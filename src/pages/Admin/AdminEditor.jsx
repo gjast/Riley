@@ -57,6 +57,22 @@ export default function AdminEditor({ onLogout }) {
     onLogout();
   }, [onLogout]);
 
+  const handleUploadError = useCallback(
+    (reason) => {
+      if (reason === "unauthorized") {
+        showStatus(t("admin.status.sessionExpired"));
+        logout();
+        return;
+      }
+      showStatus(
+        reason === "noDataUrl"
+          ? t("admin.noDataUrl")
+          : t("admin.uploadFailed"),
+      );
+    },
+    [logout, showStatus, t],
+  );
+
   const onChangeCase = useCallback(
     (patch) => {
       if (!selected) return;
@@ -189,12 +205,25 @@ export default function AdminEditor({ onLogout }) {
     }
     const result = await saveCasesRemote(draft, token);
     if (result.ok) {
-      showStatus(t("admin.status.savedServer"));
+      setDraft(cloneDraft());
+      if (result.strippedDataUrlImages > 0) {
+        showStatus(
+          t("admin.status.savedServerStrippedDataUrls", {
+            count: result.strippedDataUrlImages,
+          }),
+        );
+      } else {
+        showStatus(t("admin.status.savedServer"));
+      }
     } else if (result.status === 401 || result.status === 403) {
       showStatus(t("admin.status.sessionExpired"));
       logout();
     } else {
-      showStatus(result.error || t("admin.status.saveFailed"));
+      showStatus(
+        result.error === "data_url_images_not_allowed"
+          ? t("admin.noDataUrl")
+          : result.error || t("admin.status.saveFailed"),
+      );
     }
   };
 
@@ -362,6 +391,8 @@ export default function AdminEditor({ onLogout }) {
             <AdminCaseEditor
               caseItem={selected}
               caseIndex={selectedIndex}
+              uploadToken={getAdminToken()}
+              onUploadError={handleUploadError}
               onChangeCase={onChangeCase}
               onChangeCard={onChangeCard}
               onAddCard={onAddCard}
@@ -401,6 +432,8 @@ export default function AdminEditor({ onLogout }) {
                   idPrefix={`svc-${selectedService.key}`}
                   fallbackImage="/imgs/case/1.png"
                   pathHint={`/services/${selectedService.key}`}
+                  uploadToken={getAdminToken()}
+                  onUploadError={handleUploadError}
                   onChangeCard={onChangeServicePortfolioCard}
                   onAddCard={onAddServicePortfolioCard}
                   onRemoveCard={onRemoveServicePortfolioCard}

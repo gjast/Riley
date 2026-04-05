@@ -1,5 +1,6 @@
 import { useRef } from "react";
 import { useTranslation } from "react-i18next";
+import { uploadAdminImage } from "../../../api/uploadAdminImage";
 import AdminPortfolioCardsSection from "./AdminPortfolioCardsSection";
 
 const panelStyle = {
@@ -13,18 +14,11 @@ const inputClass =
 const labelClass =
   "mb-1.5 block text-[13px] font-medium tracking-[-0.02em] text-[#8B8B8B]";
 
-function readFileAsDataUrl(file) {
-  return new Promise((resolve, reject) => {
-    const r = new FileReader();
-    r.onload = () => resolve(String(r.result));
-    r.onerror = reject;
-    r.readAsDataURL(file);
-  });
-}
-
 export default function AdminCaseEditor({
   caseItem,
   caseIndex,
+  uploadToken,
+  onUploadError,
   onChangeCase,
   onChangeCard,
   onAddCard,
@@ -73,8 +67,20 @@ export default function AdminCaseEditor({
                 const f = e.target.files?.[0];
                 e.target.value = "";
                 if (!f) return;
-                const url = await readFileAsDataUrl(f);
-                onChangeCase({ img: url });
+                if (!uploadToken?.trim()) {
+                  onUploadError?.();
+                  return;
+                }
+                const r = await uploadAdminImage(f, uploadToken);
+                if (r.ok) {
+                  onChangeCase({ img: r.url });
+                } else {
+                  onUploadError?.(
+                    r.status === 401 || r.status === 403
+                      ? "unauthorized"
+                      : undefined,
+                  );
+                }
               }}
             />
             <button
@@ -109,7 +115,14 @@ export default function AdminCaseEditor({
                 id={`case-img-url-${caseIndex}`}
                 className={inputClass}
                 value={caseItem.img}
-                onChange={(e) => onChangeCase({ img: e.target.value })}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  if (/^\s*data:/i.test(v)) {
+                    onUploadError?.("noDataUrl");
+                    return;
+                  }
+                  onChangeCase({ img: v });
+                }}
                 placeholder={t("admin.placeholderCaseImage")}
               />
             </div>
@@ -122,6 +135,8 @@ export default function AdminCaseEditor({
         cards={caseItem.cards}
         idPrefix={idPrefix}
         fallbackImage={caseItem.img || "/imgs/case/1.png"}
+        uploadToken={uploadToken}
+        onUploadError={onUploadError}
         onChangeCard={onChangeCard}
         onAddCard={onAddCard}
         onRemoveCard={onRemoveCard}

@@ -169,6 +169,36 @@ export async function hydrateCasesFromServer() {
   notifyListeners();
 }
 
+/** Сервер не принимает data: в img; снимаем перед POST (наследие старых JSON). */
+function stripDataUrlImagesForApi(body) {
+  const out = structuredClone(body);
+  let stripped = 0;
+  const strip = (obj) => {
+    if (!obj || typeof obj !== "object") return;
+    if (
+      typeof obj.img === "string" &&
+      /^data:/i.test(obj.img.trimStart())
+    ) {
+      obj.img = "";
+      stripped += 1;
+    }
+  };
+  if (Array.isArray(out.cases)) {
+    for (const c of out.cases) {
+      strip(c);
+      if (Array.isArray(c?.cards))
+        for (const card of c.cards) strip(card);
+    }
+  }
+  if (Array.isArray(out.landingServices)) {
+    for (const s of out.landingServices) {
+      if (Array.isArray(s?.portfolioCards))
+        for (const card of s.portfolioCards) strip(card);
+    }
+  }
+  return { payload: out, stripped };
+}
+
 export async function saveCasesRemote(payload, token) {
   let body;
   if (Array.isArray(payload)) {
@@ -199,6 +229,10 @@ export async function saveCasesRemote(payload, token) {
     body = { cases, landingServices };
   }
 
+  const { payload: sanitizedBody, stripped: strippedDataUrls } =
+    stripDataUrlImagesForApi(body);
+  body = sanitizedBody;
+
   try {
     const res = await fetch(apiUrl("/api/cases"), {
       method: "POST",
@@ -220,7 +254,11 @@ export async function saveCasesRemote(payload, token) {
     }
     memoryPayload = { cases: body.cases, landingServices: body.landingServices };
     notifyListeners();
-    return { ok: true, status: res.status };
+    return {
+      ok: true,
+      status: res.status,
+      strippedDataUrlImages: strippedDataUrls,
+    };
   } catch (e) {
     return {
       ok: false,

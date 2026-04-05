@@ -1,8 +1,11 @@
 import http from "node:http";
+import { createReadStream, createWriteStream } from "node:fs";
 import fs from "node:fs/promises";
 import path from "node:path";
+import { pipeline } from "node:stream/promises";
 import { fileURLToPath } from "node:url";
-import { randomBytes } from "node:crypto";
+import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
+import busboy from "busboy";
 import {
   DEFAULT_CASES,
   DEFAULT_LANDING_SERVICES,
@@ -11,6 +14,41 @@ import {
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = path.join(__dirname, "data");
 const DATA_FILE = path.join(DATA_DIR, "cases.json");
+const UPLOAD_DIR = path.join(DATA_DIR, "uploads");
+
+const ALLOWED_IMAGE_MIME = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+  "image/svg+xml",
+]);
+
+const UPLOAD_FILENAME_RE = /^[a-f0-9]{32}\.(jpg|png|webp|gif|svg)$/;
+
+function extFromMime(mime) {
+  const m = {
+    "image/jpeg": ".jpg",
+    "image/png": ".png",
+    "image/webp": ".webp",
+    "image/gif": ".gif",
+    "image/svg+xml": ".svg",
+  };
+  return m[mime] || ".bin";
+}
+
+function mimeFromUploadName(filename) {
+  const ext = path.extname(filename).toLowerCase();
+  const map = {
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".png": "image/png",
+    ".webp": "image/webp",
+    ".gif": "image/gif",
+    ".svg": "image/svg+xml",
+  };
+  return map[ext] || "application/octet-stream";
+}
 
 /**
  * Применяет строку KEY=VAL из .env.
@@ -62,7 +100,10 @@ async function loadDotEnv() {
       }
     } catch (e) {
       if (e?.code !== "ENOENT") {
-        console.warn(`[relaylend-server] Could not read ${envPath}:`, e.message);
+        console.warn(
+          `[relaylend-server] Could not read ${envPath}:`,
+          e.message,
+        );
       }
     }
   }
@@ -71,14 +112,16 @@ async function loadDotEnv() {
       `[relaylend-server] No .env file found. Tried:\n  ${paths.join("\n  ")}`,
     );
   } else {
-    console.log(`[relaylend-server] Loaded .env from: ${loadedPaths.join(", ")}`);
+    console.log(
+      `[relaylend-server] Loaded .env from: ${loadedPaths.join(", ")}`,
+    );
   }
 }
 
 await loadDotEnv();
 
 const _port = Number(process.env.PORT) || Number(process.env.API_PORT);
-const PORT = Number.isFinite(_port) && _port > 0 ? _port : 8787;
+const PORT = Number.isFinite(_port) && _port > 0 ? _port : 4000;
 
 if (!process.env.ADMIN_PASSWORD?.trim()) {
   console.warn(
@@ -86,16 +129,70 @@ if (!process.env.ADMIN_PASSWORD?.trim()) {
   );
 }
 
-/** token -> expiry ms */
-const sessions = new Map();
+/** Stateless admin JWT-like token: не теряется при рестарте процесса / другом инстансе (Docker). */
+function adminSessionSecret() {
+  const extra = process.env.ADMIN_SESSION_SECRET?.trim();
+  if (extra) return extra;
+  const pwd = process.env.ADMIN_PASSWORD?.trim();
+  if (pwd) return `${pwd}\nrelaylend-admin-v1`;
+  return "";
+}
+
+function mintAdminToken() {
+  const secret = adminSessionSecret();
+  if (!secret) return null;
+  const exp = Date.now() + 24 * 60 * 60 * 1000;
+  const payload = Buffer.from(JSON.stringify({ exp }), "utf8").toString(
+    "base64url",
+  );
+  const sig = createHmac("sha256", secret).update(payload).digest("base64url");
+  return `${payload}.${sig}`;
+}
+
+function validateToken(authHeader) {
+  if (!authHeader?.startsWith("Bearer ")) return false;
+  const raw = authHeader.slice(7).trim();
+  const dot = raw.lastIndexOf(".");
+  if (dot <= 0) return false;
+  const payloadB64 = raw.slice(0, dot);
+  const sig = raw.slice(dot + 1);
+  const secret = adminSessionSecret();
+  if (!secret) return false;
+  const expected = createHmac("sha256", secret)
+    .update(payloadB64)
+    .digest("base64url");
+  if (sig.length !== expected.length) return false;
+  try {
+    if (
+      !timingSafeEqual(Buffer.from(sig, "utf8"), Buffer.from(expected, "utf8"))
+    ) {
+      return false;
+    }
+  } catch {
+    return false;
+  }
+  try {
+    const { exp } = JSON.parse(
+      Buffer.from(payloadB64, "base64url").toString("utf8"),
+    );
+    if (
+      typeof exp !== "number" ||
+      !Number.isFinite(exp) ||
+      exp < Date.now()
+    ) {
+      return false;
+    }
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 function readBody(req) {
   return new Promise((resolve, reject) => {
     const chunks = [];
     req.on("data", (c) => chunks.push(c));
-    req.on("end", () =>
-      resolve(Buffer.concat(chunks).toString("utf8")),
-    );
+    req.on("end", () => resolve(Buffer.concat(chunks).toString("utf8")));
     req.on("error", reject);
   });
 }
@@ -113,9 +210,7 @@ function readBodyLimited(req, maxBytes) {
       }
       chunks.push(c);
     });
-    req.on("end", () =>
-      resolve(Buffer.concat(chunks).toString("utf8")),
-    );
+    req.on("end", () => resolve(Buffer.concat(chunks).toString("utf8")));
     req.on("error", reject);
   });
 }
@@ -233,33 +328,130 @@ function sendJson(res, status, obj) {
 
 function cors(res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader(
-    "Access-Control-Allow-Headers",
-    "Content-Type, Authorization",
-  );
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-}
-
-function validateToken(authHeader) {
-  if (!authHeader?.startsWith("Bearer ")) return false;
-  const token = authHeader.slice(7).trim();
-  const exp = sessions.get(token);
-  if (!exp || exp < Date.now()) {
-    if (token) sessions.delete(token);
-    return false;
-  }
-  return true;
-}
-
-function pruneSessions() {
-  const now = Date.now();
-  for (const [t, exp] of sessions) {
-    if (exp < now) sessions.delete(t);
-  }
 }
 
 async function ensureDataDir() {
   await fs.mkdir(DATA_DIR, { recursive: true });
+}
+
+async function ensureUploadDir() {
+  await fs.mkdir(UPLOAD_DIR, { recursive: true });
+}
+
+function handleAdminUpload(req, res) {
+  if (!validateToken(req.headers.authorization)) {
+    sendJson(res, 403, { error: "Unauthorized" });
+    return Promise.resolve();
+  }
+  const ct = req.headers["content-type"] || "";
+  if (!ct.toLowerCase().includes("multipart/form-data")) {
+    sendJson(res, 400, { error: "Expected multipart/form-data" });
+    return Promise.resolve();
+  }
+
+  return ensureUploadDir().then(
+    () =>
+      new Promise((resolve) => {
+        const bb = busboy({
+          headers: req.headers,
+          limits: { fileSize: 8 * 1024 * 1024 },
+        });
+        let responded = false;
+        let sawFile = false;
+
+        const done = () => {
+          resolve();
+        };
+
+        function respond(status, obj) {
+          if (responded) return;
+          responded = true;
+          sendJson(res, status, obj);
+          done();
+        }
+
+        bb.on("file", (name, file, info) => {
+          if (name !== "file") {
+            file.resume();
+            return;
+          }
+          if (sawFile) {
+            file.resume();
+            return;
+          }
+          sawFile = true;
+          file.on("error", (err) => {
+            console.error("[relaylend-server] upload file stream:", err);
+            respond(500, { error: "Upload failed" });
+          });
+          void (async () => {
+            try {
+              const mime = String(info.mimeType || "").toLowerCase();
+              if (!ALLOWED_IMAGE_MIME.has(mime)) {
+                file.resume();
+                respond(400, { error: "Invalid image type" });
+                return;
+              }
+              const fname = `${randomBytes(16).toString("hex")}${extFromMime(mime)}`;
+              const fp = path.join(UPLOAD_DIR, fname);
+              await pipeline(file, createWriteStream(fp));
+              respond(200, { url: `/api/uploads/${fname}` });
+            } catch (e) {
+              console.error("[relaylend-server] upload:", e);
+              respond(500, { error: "Upload failed" });
+            }
+          })();
+        });
+
+        bb.on("error", (err) => {
+          console.error("[relaylend-server] multipart:", err);
+          respond(400, { error: "Malformed multipart" });
+        });
+
+        // Не вызывать done(), пока файл ещё пишется: иначе Promise завершится без ответа → прокси 502.
+        bb.on("finish", () => {
+          if (!responded && !sawFile) {
+            respond(400, { error: "No file" });
+            return;
+          }
+          if (responded) {
+            done();
+          }
+        });
+
+        req.pipe(bb);
+      }),
+  );
+}
+
+async function serveUploadFile(req, res, filename) {
+  if (!UPLOAD_FILENAME_RE.test(filename)) {
+    res.writeHead(404);
+    res.end();
+    return;
+  }
+  const fp = path.join(UPLOAD_DIR, filename);
+  const resolved = path.resolve(fp);
+  const rootResolved = path.resolve(UPLOAD_DIR);
+  if (!resolved.startsWith(rootResolved)) {
+    res.writeHead(404);
+    res.end();
+    return;
+  }
+  try {
+    await fs.stat(resolved);
+  } catch {
+    res.writeHead(404);
+    res.end();
+    return;
+  }
+  res.writeHead(200, {
+    "Content-Type": mimeFromUploadName(filename),
+    "Cache-Control": "public, max-age=86400",
+  });
+  createReadStream(resolved).pipe(res);
 }
 
 async function readCasesFile() {
@@ -276,9 +468,44 @@ async function writeCasesFile(data) {
   await fs.writeFile(DATA_FILE, JSON.stringify(data, null, 2), "utf8");
 }
 
+function imgLooksLikeDataUrl(s) {
+  return /^data:/i.test(String(s ?? "").trimStart());
+}
+
+function casesArrayHasDataUrlImages(cases) {
+  if (!Array.isArray(cases)) return false;
+  for (const c of cases) {
+    if (imgLooksLikeDataUrl(c?.img)) return true;
+    if (!Array.isArray(c?.cards)) continue;
+    for (const card of c.cards) {
+      if (imgLooksLikeDataUrl(card?.img)) return true;
+    }
+  }
+  return false;
+}
+
+function landingServicesHasDataUrlImages(landing) {
+  if (!Array.isArray(landing)) return false;
+  for (const s of landing) {
+    if (!Array.isArray(s?.portfolioCards)) continue;
+    for (const card of s.portfolioCards) {
+      if (imgLooksLikeDataUrl(card?.img)) return true;
+    }
+  }
+  return false;
+}
+
+function requestPathname(req) {
+  let p = req.url?.split("?")[0] || "";
+  if (p.length > 1 && p.endsWith("/")) {
+    p = p.replace(/\/+$/, "");
+  }
+  return p;
+}
+
 const server = http.createServer(async (req, res) => {
   cors(res);
-  const url = req.url?.split("?")[0] || "";
+  const url = requestPathname(req);
 
   if (req.method === "OPTIONS") {
     res.writeHead(204);
@@ -332,6 +559,17 @@ const server = http.createServer(async (req, res) => {
       return sendJson(res, 200, payload);
     }
 
+    if (url.startsWith("/api/uploads/") && req.method === "GET") {
+      const name = decodeURIComponent(url.slice("/api/uploads/".length));
+      await serveUploadFile(req, res, name);
+      return;
+    }
+
+    if (url === "/api/admin/upload" && req.method === "POST") {
+      await handleAdminUpload(req, res);
+      return;
+    }
+
     if (url === "/api/admin/login" && req.method === "POST") {
       const pwd = process.env.ADMIN_PASSWORD?.trim();
       if (!pwd) {
@@ -350,10 +588,13 @@ const server = http.createServer(async (req, res) => {
       if (body.password !== pwd) {
         return sendJson(res, 401, { error: "Invalid password" });
       }
-      pruneSessions();
-      const token = randomBytes(32).toString("hex");
-      const ttlMs = 24 * 60 * 60 * 1000;
-      sessions.set(token, Date.now() + ttlMs);
+      const token = mintAdminToken();
+      if (!token) {
+        return sendJson(res, 503, {
+          error:
+            "Server misconfigured: set ADMIN_PASSWORD (or ADMIN_SESSION_SECRET) and restart.",
+        });
+      }
       return sendJson(res, 200, { token });
     }
 
@@ -369,6 +610,13 @@ const server = http.createServer(async (req, res) => {
         return sendJson(res, 400, { error: "Invalid JSON" });
       }
       if (Array.isArray(data)) {
+        if (casesArrayHasDataUrlImages(data)) {
+          return sendJson(res, 400, {
+            error: "data_url_images_not_allowed",
+            detail:
+              "Replace data:image/… with uploaded files (/api/uploads/…) or HTTP URLs.",
+          });
+        }
         const existing = await readCasesFile();
         let landing = DEFAULT_LANDING_SERVICES;
         if (
@@ -379,6 +627,13 @@ const server = http.createServer(async (req, res) => {
         ) {
           landing = existing.landingServices;
         }
+        if (landingServicesHasDataUrlImages(landing)) {
+          return sendJson(res, 400, {
+            error: "data_url_images_not_allowed",
+            detail:
+              "Replace data:image/… in landing service cards with /api/uploads/… URLs.",
+          });
+        }
         await writeCasesFile({ cases: data, landingServices: landing });
         return sendJson(res, 200, { ok: true });
       }
@@ -387,12 +642,27 @@ const server = http.createServer(async (req, res) => {
       }
       if (!Array.isArray(data.cases)) {
         return sendJson(res, 400, {
-          error: "Body must be a cases array (legacy) or { cases, landingServices }",
+          error:
+            "Body must be a cases array (legacy) or { cases, landingServices }",
         });
       }
       const landing = Array.isArray(data.landingServices)
         ? data.landingServices
         : DEFAULT_LANDING_SERVICES;
+      if (casesArrayHasDataUrlImages(data.cases)) {
+        return sendJson(res, 400, {
+          error: "data_url_images_not_allowed",
+          detail:
+            "Replace data:image/… with uploaded files (/api/uploads/…) or HTTP URLs.",
+        });
+      }
+      if (landingServicesHasDataUrlImages(landing)) {
+        return sendJson(res, 400, {
+          error: "data_url_images_not_allowed",
+          detail:
+            "Replace data:image/… in landing service cards with /api/uploads/… URLs.",
+        });
+      }
       await writeCasesFile({
         cases: data.cases,
         landingServices: landing,
@@ -422,6 +692,7 @@ server.on("error", (err) => {
 server.listen(PORT, () => {
   console.log(`[relaylend-server] http://127.0.0.1:${PORT}`);
   console.log(`[relaylend-server] cases file: ${DATA_FILE}`);
+  console.log(`[relaylend-server] uploads dir: ${UPLOAD_DIR}`);
   console.log(
     `[relaylend-server] ADMIN_PASSWORD: ${process.env.ADMIN_PASSWORD?.trim() ? "set" : "MISSING (login will return 503)"}`,
   );

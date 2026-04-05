@@ -1,7 +1,11 @@
-# API кейсов: GET/POST /api/cases, POST /api/admin/login
+# API: GET/POST /api/cases, POST /api/admin/login, POST /api/admin/upload, GET /api/uploads/*
+# В образ ставим только busboy — не весь фронт (React/Vite), иначе npm ci занимает десятки секунд.
 FROM node:22-alpine
 
 WORKDIR /app
+
+RUN npm init -y >/dev/null 2>&1 \
+  && npm install busboy@1.6.0 --omit=dev --no-audit --no-fund
 
 COPY server/index.mjs ./server/index.mjs
 COPY src/data/casesDefaults.js ./src/data/casesDefaults.js
