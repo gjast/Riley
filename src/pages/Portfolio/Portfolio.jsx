@@ -68,6 +68,7 @@ export default function Portfolio() {
               title={card.title}
               description={card.description}
               href={card.href}
+              eagerImage={index === 0}
             />
           </MotionBlock>
         ))}

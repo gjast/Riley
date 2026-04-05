@@ -15,12 +15,13 @@ export default function Cases() {
       <Title title={t("cases.title")} description={t("cases.description")} />
 
       <div className="grid w-full grid-cols-2 gap-3 sm:gap-4 md:gap-5 lg:grid-cols-3 lg:gap-[24px]">
-        {cases.map((item) => (
+        {cases.map((item, index) => (
           <Case
             key={item.id}
             img={item.img}
             title={item.title}
             to={`/portfolio/${item.id}`}
+            eager={index < 4}
           />
         ))}
       </div>

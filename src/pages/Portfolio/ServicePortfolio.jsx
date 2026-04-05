@@ -65,6 +65,7 @@ export default function ServicePortfolio() {
               title={card.title}
               description={card.description}
               href={card.href}
+              eagerImage={index === 0}
             />
           </MotionBlock>
         ))}

@@ -1,8 +1,6 @@
 import React from "react";
-import { useTranslation } from "react-i18next";
 
-export default function Cart({ img, title, description, href }) {
-  const { t } = useTranslation();
+export default function Cart({ img, title, description, eagerImage }) {
   return (
     <div className="flex-1 flex flex-col gap-[24px]">
       <div
@@ -17,6 +15,8 @@ export default function Cart({ img, title, description, href }) {
             className="absolute inset-0 w-full aspect-square object-cover"
             src={img}
             alt={title}
+            decoding="async"
+            loading={eagerImage ? "eager" : "lazy"}
           />
         </div>
       </div>

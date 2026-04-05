@@ -8,10 +8,10 @@ import { hydrateCasesFromServer } from "./data/casesStorage.js";
 
 const rootEl = document.getElementById("root");
 
-hydrateCasesFromServer().finally(() => {
-  createRoot(rootEl).render(
-    <StrictMode>
-      <RouterProvider router={router} />
-    </StrictMode>,
-  );
-});
+// Не блокируем первый кадр ожиданием GET /api/cases (большой JSON или сеть).
+createRoot(rootEl).render(
+  <StrictMode>
+    <RouterProvider router={router} />
+  </StrictMode>,
+);
+void hydrateCasesFromServer();

@@ -490,7 +490,8 @@ async function serveUploadFile(req, res, filename) {
   }
   res.writeHead(200, {
     "Content-Type": mimeFromUploadName(filename),
-    "Cache-Control": "public, max-age=86400",
+    // Имена файлов — случайный hex; после загрузки не меняются → долгий кэш.
+    "Cache-Control": "public, max-age=31536000, immutable",
   });
   createReadStream(resolved).pipe(res);
 }

@@ -10,6 +10,7 @@ export default function Servic({
 	position,
 	positionImg,
 	to,
+	eagerImage,
 }) {
 	return (
 		<Link
@@ -29,6 +30,8 @@ export default function Servic({
 					src={img}
 					alt=""
 					draggable={false}
+					decoding="async"
+					loading={eagerImage ? "eager" : "lazy"}
 					onDragStart={(e) => e.preventDefault()}
 					className={`absolute max-w-[85%] sm:max-w-[95%] select-none ${positionImg}`}
 				/>

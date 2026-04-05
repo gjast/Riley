@@ -16,7 +16,7 @@ export default function Services() {
       <Title title={t("services.title")} description={t("services.description")} />
 
       <div className="grid w-full grid-cols-1 gap-4 sm:gap-4 md:grid-cols-4 md:gap-[16px]">
-        {landingServices.map((item) => {
+        {landingServices.map((item, index) => {
           const layout = LANDING_SERVICE_CARD_LAYOUT[item.key];
           if (!layout) return null;
           return (
@@ -28,6 +28,7 @@ export default function Services() {
                 img={layout.img}
                 positionImg={layout.positionImg}
                 to={`/services/${item.key}`}
+                eagerImage={index < 2}
               />
             </div>
           );
