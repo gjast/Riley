@@ -2,11 +2,17 @@ import { useTranslation } from "react-i18next";
 import Title from "../../../components/Title";
 import Servic from "../../../components/Servic";
 import { LANDING_SERVICE_CARD_LAYOUT } from "../../../data/cases";
+import { useCasesHydrated } from "../../../data/useCasesHydrated";
 import { useLandingServices } from "../../../data/useLandingServices";
 
 export default function Services() {
   const { t } = useTranslation();
+  const hydrated = useCasesHydrated();
   const landingServices = useLandingServices();
+
+  if (!hydrated || landingServices.length === 0) {
+    return null;
+  }
 
   return (
     <section

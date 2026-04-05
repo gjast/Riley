@@ -9,6 +9,13 @@ const listeners = new Set();
 /** @type {{ cases: object[], landingServices: object[] } | null} */
 let memoryPayload = null;
 
+/** После первого hydrateCasesFromServer — не подставляем встроенные кейсы до ответа API. */
+let casesHydrated = false;
+
+export function getCasesHydrated() {
+  return casesHydrated;
+}
+
 function cloneCases(source) {
   return structuredClone(source);
 }
@@ -113,30 +120,67 @@ export function migrateLandingServicesPayload(parsed, legacyCases = null) {
   return merged;
 }
 
-function normalizeApiPayload(stored) {
-  if (!stored) {
-    return getDefaultsPayload();
+/** Только данные с API, без встроенных DEFAULT_CASES / DEFAULT_LANDING_SERVICES. */
+function normalizeApiPayloadFromServer(data) {
+  if (data == null) {
+    return { cases: [], landingServices: [] };
   }
-  if (Array.isArray(stored)) {
-    const raw = migrateCasesPayload(stored) ?? cloneCases(DEFAULT_CASES);
-    const cases = stripLegacyServiceCases(raw);
+  if (Array.isArray(data)) {
+    const migrated = migrateCasesPayload(data);
+    const raw = migrated ?? [];
     return {
-      cases,
-      landingServices: cloneLanding(DEFAULT_LANDING_SERVICES),
+      cases: stripLegacyServiceCases(raw),
+      landingServices: [],
     };
   }
-  const rawCases =
-    migrateCasesPayload(stored.cases) ?? cloneCases(DEFAULT_CASES);
-  const landingServices =
-    migrateLandingServicesPayload(stored.landingServices, rawCases) ??
-    cloneLanding(DEFAULT_LANDING_SERVICES);
+  if (typeof data !== "object") {
+    return { cases: [], landingServices: [] };
+  }
+  const rawCases = Array.isArray(data.cases)
+    ? data.cases.map(normalizeCase).filter((c) => c.id)
+    : [];
   const cases = stripLegacyServiceCases(rawCases);
+  const landingServices = landingServicesFromApiOnly(
+    data.landingServices,
+    rawCases,
+  );
   return { cases, landingServices };
 }
 
+/** Услуги с сервера как есть (+ перенос карточек с portfolioCaseId), без слияния с дефолтами. */
+function landingServicesFromApiOnly(parsed, legacyCases) {
+  if (!Array.isArray(parsed)) return [];
+  return parsed
+    .map((s) => {
+      const n = normalizeLandingItem(s);
+      if (!n.key) return null;
+      let portfolioCards = Array.isArray(n.portfolioCards)
+        ? n.portfolioCards.map(normalizeCard)
+        : [];
+      if (
+        !portfolioCards.length &&
+        n.portfolioCaseId &&
+        Array.isArray(legacyCases)
+      ) {
+        const linked = legacyCases.find(
+          (c) => String(c?.id ?? "") === n.portfolioCaseId,
+        );
+        if (linked?.cards?.length) {
+          portfolioCards = linked.cards.map(normalizeCard);
+        }
+      }
+      return { key: n.key, portfolioCards };
+    })
+    .filter(Boolean);
+}
+
+function landingServicesForSave(parsed, legacyCases) {
+  return landingServicesFromApiOnly(parsed, legacyCases);
+}
+
 export function getCases() {
-  const p = memoryPayload ?? getDefaultsPayload();
-  return cloneCases(p.cases);
+  if (!casesHydrated || !memoryPayload) return [];
+  return cloneCases(memoryPayload.cases);
 }
 
 export function getCasesForLandingGrid() {
@@ -144,13 +188,14 @@ export function getCasesForLandingGrid() {
 }
 
 export function getLandingServices() {
-  const p = memoryPayload ?? getDefaultsPayload();
-  return cloneLanding(p.landingServices);
+  if (!casesHydrated || !memoryPayload) return [];
+  return cloneLanding(memoryPayload.landingServices);
 }
 
 export function getLandingServiceByKey(key) {
-  const p = memoryPayload ?? getDefaultsPayload();
-  return p.landingServices.find((s) => s.key === key) ?? null;
+  if (!casesHydrated || !memoryPayload) return null;
+  const k = String(key ?? "");
+  return memoryPayload.landingServices.find((s) => s.key === k) ?? null;
 }
 
 export function getCaseById(id) {
@@ -162,11 +207,13 @@ export async function hydrateCasesFromServer() {
     const res = await fetch(apiUrl("/api/cases"));
     if (!res.ok) throw new Error("cases fetch failed");
     const data = await res.json();
-    memoryPayload = normalizeApiPayload(data);
+    memoryPayload = normalizeApiPayloadFromServer(data);
   } catch {
-    memoryPayload = getDefaultsPayload();
+    memoryPayload = { cases: [], landingServices: [] };
+  } finally {
+    casesHydrated = true;
+    notifyListeners();
   }
-  notifyListeners();
 }
 
 /** Сервер не принимает data: в img; снимаем перед POST (наследие старых JSON). */
@@ -202,31 +249,26 @@ function stripDataUrlImagesForApi(body) {
 export async function saveCasesRemote(payload, token) {
   let body;
   if (Array.isArray(payload)) {
-    const raw = migrateCasesPayload(payload);
-    if (!raw) {
-      return { ok: false, status: 0, error: "Invalid cases payload" };
-    }
+    const raw = payload.map(normalizeCase).filter((c) => c.id);
     const cases = stripLegacyServiceCases(raw);
     body = {
       cases,
-      landingServices: memoryPayload?.landingServices
+      landingServices: memoryPayload?.landingServices?.length
         ? cloneLanding(memoryPayload.landingServices)
-        : cloneLanding(DEFAULT_LANDING_SERVICES),
+        : [],
     };
   } else {
-    const rawCases = migrateCasesPayload(payload?.cases);
-    if (!rawCases) {
+    if (!Array.isArray(payload?.cases)) {
       return { ok: false, status: 0, error: "Invalid payload" };
     }
-    const landingServices = migrateLandingServicesPayload(
+    const rawCases = stripLegacyServiceCases(
+      payload.cases.map(normalizeCase).filter((c) => c.id),
+    );
+    const landingServices = landingServicesForSave(
       payload?.landingServices,
       rawCases,
     );
-    if (!landingServices) {
-      return { ok: false, status: 0, error: "Invalid payload" };
-    }
-    const cases = stripLegacyServiceCases(rawCases);
-    body = { cases, landingServices };
+    body = { cases: rawCases, landingServices };
   }
 
   const { payload: sanitizedBody, stripped: strippedDataUrls } =

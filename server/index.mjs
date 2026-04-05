@@ -635,21 +635,15 @@ const server = http.createServer(async (req, res) => {
       const stored = await readCasesFile();
       let payload;
       if (!stored) {
-        payload = {
-          cases: DEFAULT_CASES,
-          landingServices: DEFAULT_LANDING_SERVICES,
-        };
+        payload = { cases: [], landingServices: [] };
       } else if (Array.isArray(stored)) {
-        payload = {
-          cases: stored,
-          landingServices: DEFAULT_LANDING_SERVICES,
-        };
+        payload = { cases: stored, landingServices: [] };
       } else {
         payload = {
-          cases: Array.isArray(stored.cases) ? stored.cases : DEFAULT_CASES,
+          cases: Array.isArray(stored.cases) ? stored.cases : [],
           landingServices: Array.isArray(stored.landingServices)
             ? stored.landingServices
-            : DEFAULT_LANDING_SERVICES,
+            : [],
         };
       }
       return sendJson(res, 200, payload);

@@ -8,6 +8,7 @@ import Footer from "../Landing/blocks/Footer";
 import Header from "./blocks/Header";
 import Cart from "./blocks/Cart";
 import { getCaseById, LANDING_SERVICE_KEYS } from "../../data/cases";
+import { useCasesHydrated } from "../../data/useCasesHydrated";
 
 const easeSlide = [0.22, 1, 0.36, 1];
 const easeFade = [0.4, 0, 0.2, 1];
@@ -15,10 +16,23 @@ const easeFade = [0.4, 0, 0.2, 1];
 export default function Portfolio() {
   const { caseId } = useParams();
   const reducedMotion = useReducedMotion();
+  const hydrated = useCasesHydrated();
 
   const legacyKey = /^service-(.+)$/.exec(caseId || "")?.[1];
   if (legacyKey && LANDING_SERVICE_KEYS.includes(legacyKey)) {
     return <Navigate to={`/services/${legacyKey}`} replace />;
+  }
+
+  if (!hydrated) {
+    return (
+      <div
+        className="flex min-h-screen items-center justify-center bg-(--color-background) text-[15px] text-[#6A6A6D]"
+        role="status"
+        aria-live="polite"
+      >
+        Loading…
+      </div>
+    );
   }
 
   const caseData = caseId ? getCaseById(caseId) : null;

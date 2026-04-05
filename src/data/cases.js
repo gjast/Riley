@@ -9,6 +9,7 @@ export {
   getCases,
   getCasesForLandingGrid,
   getCaseById,
+  getCasesHydrated,
   getLandingServiceByKey,
   getLandingServices,
   hydrateCasesFromServer,

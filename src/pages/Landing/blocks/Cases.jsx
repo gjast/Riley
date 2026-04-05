@@ -1,11 +1,17 @@
 import { useTranslation } from "react-i18next";
 import Title from "../../../components/Title";
 import Case from "../../../components/Case";
+import { useCasesHydrated } from "../../../data/useCasesHydrated";
 import { useCases } from "../../../data/useCases";
 
 export default function Cases() {
   const { t } = useTranslation();
+  const hydrated = useCasesHydrated();
   const cases = useCases();
+
+  if (!hydrated || cases.length === 0) {
+    return null;
+  }
 
   return (
     <div

@@ -8,6 +8,7 @@ import Footer from "../Landing/blocks/Footer";
 import Header from "./blocks/Header";
 import Cart from "./blocks/Cart";
 import { CASE_PREVIEW_IMG } from "../../data/cases";
+import { useCasesHydrated } from "../../data/useCasesHydrated";
 import { useLandingServiceByKey } from "../../data/useLandingServiceByKey";
 
 const easeSlide = [0.22, 1, 0.36, 1];
@@ -16,8 +17,21 @@ const easeFade = [0.4, 0, 0.2, 1];
 /** Портфолио плитки «Услуги»: карточки из landingServices, не из кейсов. */
 export default function ServicePortfolio() {
   const { serviceKey } = useParams();
+  const hydrated = useCasesHydrated();
   const service = useLandingServiceByKey(serviceKey);
   const reducedMotion = useReducedMotion();
+
+  if (!hydrated) {
+    return (
+      <div
+        className="flex min-h-screen items-center justify-center bg-(--color-background) text-[15px] text-[#6A6A6D]"
+        role="status"
+        aria-live="polite"
+      >
+        Loading…
+      </div>
+    );
+  }
 
   if (!service) {
     return <Navigate to="/" replace />;
